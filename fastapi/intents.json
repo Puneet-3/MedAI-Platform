@@ -1,0 +1,388 @@
+{
+  "intents": [
+    {
+      "tag": "greetings",
+      "patterns": ["hello", "hi", "hey", "good day", "is anyone there", "greetings"],
+      "responses": ["Hello! I am your AI Health Assistant. How can I help you today?", "Hi there! How can I assist you with your health concerns today?", "Greetings! Please tell me how I can help you."]
+    },
+    {
+      "tag": "goodbye",
+      "patterns": ["bye", "goodbye", "see you later", "i am leaving", "talk to you later"],
+      "responses": ["Take care! Wishing you good health.", "Goodbye! Don't hesitate to reach out if you have health questions.", "Farewell! Stay healthy and safe."]
+    },
+    {
+      "tag": "thanks",
+      "patterns": ["thanks", "thank you", "that's helpful", "awesome", "perfect", "great help"],
+      "responses": ["You're very welcome! Glad I could help.", "Anytime! Take care of your health.", "Happy to help! Let me know if you need anything else."]
+    },
+    {
+      "tag": "capabilities",
+      "patterns": ["what can you do", "who are you", "what is your job", "how can you help me", "what are your features"],
+      "responses": ["I can answer health questions, explain common diseases, guide you through first aid, and direct you to our Symptom Checker or Doctor Booking portals.", "I am an AI health assistant. I help clarify medical symptoms, explain common conditions, and provide emergency first aid advice."]
+    },
+    {
+      "tag": "fallback",
+      "patterns": [],
+      "responses": ["I'm not sure I completely understand. Could you please describe your health concern or symptoms differently?", "I don't have enough information to answer that safely. For diagnostic queries, please use our Symptom Checker or consult a clinical professional.", "I apologize, but I didn't get that. Try asking about a symptom (e.g. fever, headache) or first aid advice."]
+    },
+    {
+      "tag": "fever",
+      "patterns": ["i have a fever", "my body temperature is high", "i feel hot and warm", "running a temperature", "feverish"],
+      "responses": ["A fever is usually a sign that your body is fighting off an infection. Stay hydrated, get rest, and consider over-the-counter antipyretics like paracetamol. If it exceeds 103°F (39.4°C) or lasts over 3 days, consult a doctor.", "Fever indicates systemic immune response. Ensure plenty of fluids and rest. Seek urgent care if accompanied by stiff neck, breathing difficulties, or severe headache."]
+    },
+    {
+      "tag": "headache",
+      "patterns": ["my head hurts", "i have a headache", "splitting headache", "throbbing pain in head", "head pain"],
+      "responses": ["Headaches can be caused by tension, dehydration, fatigue, or sinus pressure. Rest in a dark room, hydrate, and consider mild pain relievers. If it is sudden and extremely severe (a 'thunderclap' headache), seek emergency care immediately.", "For regular headaches, hydration and relaxation help. If you experience aura, vision changes, or motor deficits, it might be a migraine or neurological issue — consult a doctor."]
+    },
+    {
+      "tag": "cough",
+      "patterns": ["coughing a lot", "i have a cough", "dry cough", "coughing up mucus", "throat tickle"],
+      "responses": ["A cough can be dry or productive (producing phlegm). Productive coughs help clear airways. Hydrate with warm fluids. If your cough is accompanied by blood, shortness of breath, or lasts more than 3 weeks, see a physician.", "Dry coughs can be caused by allergies or irritants, while productive coughs point to respiratory infections. Seek medical advice if you hear wheezing or experience chest pain."]
+    },
+    {
+      "tag": "chest_pain",
+      "patterns": ["my chest hurts", "i feel chest pain", "heavy pressure on my chest", "tightness in chest", "sharp chest pain"],
+      "responses": ["WARNING: Severe chest pain, especially if it radiates to your left arm, jaw, or back, and is accompanied by sweating or shortness of breath, could indicate a HEART ATTACK. Please call emergency services (like 108 or 911) immediately.", "Chest pain can range from muscle strain and acid reflux to cardiac events. If the pain is crushing, worsens with exertion, or is accompanied by dizziness, seek emergency medical care immediately."]
+    },
+    {
+      "tag": "stomach_pain",
+      "patterns": ["stomach ache", "my tummy hurts", "pain in my stomach", "abdominal cramps", "belly pain"],
+      "responses": ["Abdominal pain can stem from indigestion, gas, gastritis, or food poisoning. Rest and stick to bland foods. If the pain is localized to the lower right side (possible appendicitis) or is severe and sudden, seek medical attention.", "Try mapping the pain location. Upper stomach pain could be reflux/gastritis, while lower abdomen cramps could be gastrointestinal. Persistent or localized severe pain requires a clinical examination."]
+    },
+    {
+      "tag": "cold",
+      "patterns": ["i have a cold", "runny nose", "stuffy nose", "sneezing and congestion", "blocked nose"],
+      "responses": ["The common cold is a viral upper respiratory tract infection. Treatment is supportive: rest, fluids, saline nasal sprays, and decongestants. It typically resolves in 7-10 days.", "Keep warm and drink plenty of fluids. Viral colds cannot be treated with antibiotics. If symptoms persist beyond 10 days or worsen significantly, visit a clinic."]
+    },
+    {
+      "tag": "sore_throat",
+      "patterns": ["my throat hurts", "sore throat", "pain when swallowing", "itchy throat", "swollen glands in neck"],
+      "responses": ["Sore throat is usually viral, but can be bacterial (strep throat). Gargling with warm salt water and drinking warm tea can soothe the throat. If you have a high fever, visible white spots in the throat, or difficulty breathing, see a doctor for a strep test.", "Most sore throats clear up in a few days. Warm fluids and throat lozenges can help. Consult a doctor if swallowing becomes extremely painful."]
+    },
+    {
+      "tag": "fatigue",
+      "patterns": ["i feel tired", "extreme fatigue", "exhausted all the time", "no energy", "sluggish"],
+      "responses": ["Fatigue can be due to sleep deprivation, poor nutrition, stress, anemia, thyroid issues, or systemic infection. Prioritize sleep hygiene and balanced nutrition. If fatigue is chronic and unexplained, blood tests may be necessary.", "Ensure you are getting 7-8 hours of restful sleep and staying hydrated. If weakness persists despite rest, check in with a doctor for blood diagnostics."]
+    },
+    {
+      "tag": "skin_rash",
+      "patterns": ["itchy rash", "skin breakout", "red spots on skin", "skin inflammation", "hives"],
+      "responses": ["Skin rashes can result from contact dermatitis, allergies, infections (viral/bacterial/fungal), or eczema. Keep the area clean and dry, avoid scratching, and apply calamine lotion. If accompanied by breathing issues, seek emergency care.", "A rash with fever, rapid spread, or blistering requires immediate doctor review. For mild itching, topical hydrocortisone or antihistamines can provide relief."]
+    },
+    {
+      "tag": "joint_pain",
+      "patterns": ["my joints ache", "knee pain", "pain in knuckles", "stiff joints", "swelling in joints"],
+      "responses": ["Joint pain can be caused by osteoarthritis, rheumatoid arthritis, gout, or physical strain. Applying heat or cold packs and resting can manage symptoms. If there is sudden redness, swelling, and inability to move the joint, seek medical advice.", "Persistent joint stiffness, especially in the mornings, could indicate an inflammatory condition. Consider scheduling a consultation for diagnostic evaluation."]
+    },
+    {
+      "tag": "nausea",
+      "patterns": ["i feel nauseous", "nausea", "feeling like throwing up", "sick to my stomach", "queasy"],
+      "responses": ["Nausea can result from indigestion, motion sickness, stress, early pregnancy, or viral gastroenteritis. Sip clear fluids, eat bland foods (BRAT diet), and avoid strong smells. Seek help if you cannot keep fluids down for 24 hours.", "Stay hydrated by taking small sips of water or electrolyte solution. Avoid greasy or sweet foods. If nausea leads to severe vomiting or dehydration, see a physician."]
+    },
+    {
+      "tag": "dizziness",
+      "patterns": ["i feel dizzy", "dizziness", "room is spinning", "feeling lightheaded", "unsteady on my feet"],
+      "responses": ["Dizziness can be caused by dehydration, low blood sugar, sudden drop in blood pressure, or inner ear issues (vertigo). Sit or lie down immediately to prevent falls. Drink water and eat a light snack.", "If dizziness is accompanied by chest pain, numbness in limbs, slurred speech, or fainting, it represents a medical emergency. Seek immediate care."]
+    },
+    {
+      "tag": "breathlessness",
+      "patterns": ["hard to breathe", "shortness of breath", "gasping for air", "cannot catch my breath", "suffocating feel"],
+      "responses": ["WARNING: Sudden, unexplained shortness of breath is a medical emergency. It could indicate asthma flare, pulmonary embolism, heart failure, or severe allergic reaction. Please seek emergency medical care immediately.", "If you have a history of asthma or COPD, use your rescue inhaler. If breathing does not improve within minutes, or if it is accompanied by chest pain, call for emergency services."]
+    },
+    {
+      "tag": "diarrhea",
+      "patterns": ["watery stools", "i have diarrhea", "loose motions", "frequent bathroom trips", "upset bowel"],
+      "responses": ["Diarrhea is commonly caused by viral or bacterial gastroenteritis. The primary risk is dehydration. Drink oral rehydration salts (ORS), water, or broth. Avoid dairy and high-fat foods. Seek care if it contains blood or lasts over 2 days.", "ORS fluid replacement is critical. Wash hands thoroughly to prevent spreading infection. If accompanied by high fever or severe abdominal pain, see a clinician."]
+    },
+    {
+      "tag": "constipation",
+      "patterns": ["cannot pass stool", "constipated", "hard stool", "irregular bowel movements", "difficulty in toilet"],
+      "responses": ["Constipation is often due to lack of dietary fiber, inadequate water intake, or physical inactivity. Increase your fluid and fiber intake (fruits, vegetables, whole grains) and walk regularly. Stool softeners can assist temporarily.", "Ensure you drink 8-10 glasses of water daily. If constipation is chronic, painful, or accompanied by blood in stool, schedule a doctor consultation."]
+    },
+    {
+      "tag": "muscle_pain",
+      "patterns": ["muscle ache", "body sore", "muscle soreness", "my muscles hurt", "pain in calf muscle"],
+      "responses": ["Muscle pain (myalgia) can arise from overexertion, injury, stress, or systemic infections like the flu. Rest, apply heat/ice, and hydrate. Over-the-counter NSAIDs can reduce discomfort.", "If muscle pain is localized, hot/cold compressions are effective. If it is accompanied by swelling, redness, or occurred after severe trauma, consult a medical professional."]
+    },
+    {
+      "tag": "shivering",
+      "patterns": ["shivering uncontrollably", "body shaking from cold", "i am shivering", "trembling with chills", "cold shakes"],
+      "responses": ["Shivering is the body's natural mechanism to generate heat. It is often associated with chills and fever. Wrap yourself in warm blankets, hydrate, and monitor your temperature. If it persists with a high fever, consult a doctor.", "Uncontrollable shivering can be a sign of rising fever due to infection (malaria, influenza) or hypothermia. Monitor temperature and seek clinical advice if fever is high."]
+    },
+    {
+      "tag": "anxiety",
+      "patterns": ["i feel anxious", "having a panic attack", "nervous and jittery", "cannot calm down", "anxiety attacks"],
+      "responses": ["Anxiety can cause racing thoughts, rapid heartbeat, and shallow breathing. Focus on slow, deep breathing (inhale for 4 seconds, hold for 4, exhale for 4). If anxiety is chronic and affects daily life, consider speaking with a mental health professional.", "Panic attacks can mimic physical crises. Sit comfortably, practice square breathing, and ground yourself in the present. Consider booking a counseling session on our platform."]
+    },
+    {
+      "tag": "depression",
+      "patterns": ["i feel depressed", "constantly sad", "hopelessness", "no motivation", "crying a lot"],
+      "responses": ["We hear you, and you don't have to go through this alone. Persistent sadness, loss of interest, and hopelessness are common symptoms of depression. We recommend consulting a therapist or counselor for professional guidance.", "If you are in immediate distress or having thoughts of self-harm, please reach out to a local crisis hotline (such as AASRA in India at +91-9820466726) immediately for confidential support."]
+    },
+    {
+      "tag": "weight_loss",
+      "patterns": ["losing weight rapidly", "unexplained weight loss", "dropped weight without trying", "slimming down fast"],
+      "responses": ["Sudden, unexplained weight loss (more than 5% of body weight within 6-12 months) can indicate conditions like hyperthyroidism, diabetes, malabsorption, or chronic infection. Please schedule a diagnostic consultation.", "Losing weight without diet or exercise changes warrants investigation. Schedule blood tests to check thyroid function, blood sugar levels, and metabolic health."]
+    },
+    {
+      "tag": "weight_gain",
+      "patterns": ["gaining weight quickly", "unexplained weight gain", "putting on weight", "bloated and gaining weight"],
+      "responses": ["Unexplained weight gain can be linked to fluid retention, hypothyroidism, hormonal imbalances (like PCOS), or medication side effects. Consider speaking with a doctor to evaluate metabolic and endocrine markers.", "Rapid weight increase can warrant a review of thyroid function (TSH tests) or hormone profiles. Set up a consultation to discuss diagnostic options."]
+    },
+    {
+      "tag": "diabetes_info",
+      "patterns": ["what is diabetes", "tell me about high blood sugar", "diabetes symptoms", "diabetes causes"],
+      "responses": ["Diabetes is a chronic metabolic disorder characterized by high blood glucose levels. Type 1 is autoimmune (body doesn't produce insulin), while Type 2 is lifestyle-related (insulin resistance). Symptoms include excessive thirst, frequent urination, and fatigue.", "Managing diabetes requires regular blood glucose monitoring, dietary controls, physical activity, and prescribed medication (insulin or oral hypoglycemics)."]
+    },
+    {
+      "tag": "hypertension_info",
+      "patterns": ["what is high blood pressure", "hypertension symptoms", "tell me about hypertension", "dangerous bp levels"],
+      "responses": ["Hypertension (high blood pressure) is often called a 'silent killer' because it rarely has symptoms but increases the risk of heart disease and stroke. Normal BP is under 120/80 mmHg. Hypertension is defined as 130/80 mmHg or higher.", "Hypertension is managed via low-sodium diet, regular exercise, weight management, stress reduction, and blood pressure medications prescribed by a physician."]
+    },
+    {
+      "tag": "asthma_info",
+      "patterns": ["what is asthma", "asthma symptoms", "how to treat asthma", "breathing wheeze asthma"],
+      "responses": ["Asthma is a chronic inflammatory disease of the airways that causes wheezing, shortness of breath, chest tightness, and coughing. It is triggered by allergens, exercise, cold air, or stress.", "Asthma is managed using long-term controller inhalers (to reduce inflammation) and quick-relief rescue inhalers (to open airways during attacks). Know your triggers and have an action plan."]
+    },
+    {
+      "tag": "ulcer_info",
+      "patterns": ["peptic ulcer symptoms", "stomach ulcers", "what is a peptic ulcer", "ulcer pain causes"],
+      "responses": ["Peptic ulcers are sores that develop on the lining of the stomach, lower esophagus, or small intestine. They are commonly caused by H. pylori bacterial infection or long-term use of NSAID pain relievers (like ibuprofen).", "Typical symptoms include burning stomach pain, indigestion, and bloating. Treatment includes acid-reducing medications (PPIs) and antibiotics if H. pylori is present."]
+    },
+    {
+      "tag": "allergy_info",
+      "patterns": ["what is an allergy", "allergy symptoms", "allergic reactions", "pollen food allergy"],
+      "responses": ["An allergy is the immune system's overreaction to a foreign substance (allergen) like pollen, dust mites, pet dander, or certain foods. Symptoms range from sneezing and hives to severe anaphylaxis.", "Mild allergies are managed with antihistamines and avoiding known triggers. Severe allergic reactions (anaphylaxis) require immediate epinephrine injection (EpiPen) and emergency care."]
+    },
+    {
+      "tag": "arthritis_info",
+      "patterns": ["what is arthritis", "arthritis joint pain", "types of arthritis", "rheumatoid osteoarthritis"],
+      "responses": ["Arthritis is inflammation of one or more joints, causing pain, stiffness, and reduced mobility. The most common types are Osteoarthritis (wear-and-tear of cartilage) and Rheumatoid Arthritis (autoimmune disease).", "Management options include physical therapy, weight loss to reduce joint load, anti-inflammatory medications, and joint injections. Regular low-impact exercise is highly beneficial."]
+    },
+    {
+      "tag": "heart_attack_first_aid",
+      "patterns": ["heart attack first aid", "what to do if someone has a heart attack", "heart attack emergency", "signs of heart attack"],
+      "responses": ["If you suspect a heart attack: 1. Call emergency services immediately. 2. Have the person sit and stay calm. 3. If they are not allergic, have them chew an aspirin. 4. If they lose consciousness and stop breathing, begin CPR immediately.", "Emergency protocol for heart attack: Alert emergency response immediately. Do not drive yourself or let them drive. Sit down, loosen tight clothing, and chew a full aspirin while waiting for help."]
+    },
+    {
+      "tag": "stroke_first_aid",
+      "patterns": ["stroke first aid", "signs of stroke", "what to do during stroke", "FAST stroke test"],
+      "responses": ["Use the F.A.S.T. test to recognize a stroke: 1. Face (is one side drooping?), 2. Arms (does one arm drift down when raised?), 3. Speech (is it slurred?), 4. Time (call emergency services immediately!).", "Stroke requires immediate emergency medical attention. Note the time symptoms started, as clot-busting treatments must be administered within a narrow window. Keep the person calm and do not give them food or drink."]
+    },
+    {
+      "tag": "pneumonia_info",
+      "patterns": ["what is pneumonia", "pneumonia symptoms", "cough chest pain pneumonia", "pneumonia causes"],
+      "responses": ["Pneumonia is an infection that inflames the air sacs in one or both lungs, which may fill with fluid or pus. Symptoms include productive cough, fever, chills, and difficulty breathing. It can be bacterial, viral, or fungal.", "Treatment depends on the cause: antibiotics for bacterial pneumonia, antivirals for viral, and supportive care (rest, fluids). Vaccination is available to prevent pneumococcal pneumonia."]
+    },
+    {
+      "tag": "tuberculosis_info",
+      "patterns": ["what is tuberculosis", "tb symptoms", "coughing blood tb", "tuberculosis infection"],
+      "responses": ["Tuberculosis (TB) is a serious infectious disease caused by Mycobacterium tuberculosis bacteria that mainly affects the lungs. It spreads through tiny droplets released into the air via coughs and sneezes.", "Classic symptoms of active TB are a chronic cough (lasting over 3 weeks, often with blood), night sweats, unexplained weight loss, and fever. TB is treatable and curable with a long course of specific antibiotics."]
+    },
+    {
+      "tag": "malaria_info",
+      "patterns": ["what is malaria", "malaria symptoms", "mosquito bite fever malaria", "high fever chills malaria"],
+      "responses": ["Malaria is a life-threatening disease caused by Plasmodium parasites transmitted through the bites of infected female Anopheles mosquitoes. Symptoms include high fever, shaking chills, headache, and flu-like illness.", "Malaria is treatable with prescribed antimalarial medications. Prevention focus is on mosquito control (bed nets, insect repellents, clearing stagnant water)."]
+    },
+    {
+      "tag": "dengue_info",
+      "patterns": ["what is dengue", "dengue symptoms", "breakbone fever", "dengue joint pain fever"],
+      "responses": ["Dengue is a viral infection transmitted by Aedes mosquitoes. Symptoms include high fever, severe headache, pain behind the eyes, joint/muscle pain ('breakbone fever'), rash, and mild bleeding. There is no specific antiviral treatment.", "Dengue management is supportive: hydration, rest, and acetaminophen for fever. WARNING: Avoid NSAIDs (like ibuprofen or aspirin) as they can increase bleeding risks. Monitor for warning signs of severe dengue."]
+    },
+    {
+      "tag": "chickenpox_info",
+      "patterns": ["what is chickenpox", "chickenpox symptoms", "itchy blisters chickenpox", "varicella virus"],
+      "responses": ["Chickenpox is a highly contagious viral infection caused by the Varicella-Zoster virus, causing an itchy rash with small, fluid-filled blisters. It is typically mild in children but can be severe in adults.", "Treatment is supportive: calamine lotion and oatmeal baths for itching, and paracetamol for fever. Vaccines are highly effective at preventing chickenpox."]
+    },
+    {
+      "tag": "first_aid_cpr",
+      "patterns": ["how to do cpr", "cpr instructions", "cardiopulmonary resuscitation", "cpr steps"],
+      "responses": ["CPR steps: 1. Confirm the area is safe and the person is unresponsive. 2. Call emergency services. 3. Place hands in the center of the chest and push hard and fast (100-120 compressions per minute). 4. If trained, give 2 rescue breaths after every 30 compressions.", "If someone is unresponsive and not breathing, start chest compressions immediately (pushing down 2 inches at a rate of 100-120 per minute to the beat of 'Stayin' Alive'). Call emergency responders first."]
+    },
+    {
+      "tag": "first_aid_choking",
+      "patterns": ["choking first aid", "heimlich maneuver", "someone is choking what to do", "choking adult steps"],
+      "responses": ["For choking: 1. Give 5 back blows between the shoulder blades with the heel of your hand. 2. If that fails, perform 5 abdominal thrusts (Heimlich maneuver). 3. Alternate between 5 blows and 5 thrusts until the blockage clears.", "If a choking person cannot speak, cough, or breathe, perform abdominal thrusts: wrap your arms around their waist from behind, make a fist, and press upward into their abdomen with quick, upward thrusts."]
+    },
+    {
+      "tag": "first_aid_bleeding",
+      "patterns": ["stop bleeding first aid", "heavy bleeding treatment", "how to treat a cut bleeding", "tourniquet steps"],
+      "responses": ["To stop bleeding: 1. Apply direct pressure to the wound with a clean cloth or bandage. 2. Elevate the injured limb above heart level if possible. 3. Do not remove the cloth if it gets soaked; add more layers on top. If bleeding is life-threatening, apply a tourniquet.", "Direct, firm pressure is the primary method to control bleeding. Apply a sterile dressing. Seek medical care if the wound is deep, gaping, or doesn't stop bleeding after 10 minutes of direct pressure."]
+    },
+    {
+      "tag": "first_aid_burns",
+      "patterns": ["burn first aid", "how to treat a burn", "thermal burn home treatment", "first degree burn care"],
+      "responses": ["For minor burns: 1. Cool the burn under cool, running water for 10-15 minutes. 2. Remove rings or tight items from the area before it swells. 3. Apply aloe vera or petroleum jelly. 4. Cover loosely with a sterile bandage. Do not pop blisters.", "Never apply ice, butter, or ointments to a fresh burn. Run cool water over it. For third-degree burns (charred or white skin), cover with a clean sheet and go to the emergency room immediately."]
+    },
+    {
+      "tag": "first_aid_poison",
+      "patterns": ["poison control helper", "swallowed household chemical", "poisoning first aid", "toxic ingestion help"],
+      "responses": ["If someone swallows poison: 1. Call poison control or emergency services immediately. 2. Do not induce vomiting unless instructed by medical professionals. 3. Identify the substance if possible. 4. If they lose consciousness, check breathing and prepare for CPR.", "Immediate professional guidance is necessary for ingestion of toxic materials. Call emergency responders or your local poison helpline immediately with details of the chemical ingested."]
+    },
+    {
+      "tag": "nearby_hospitals",
+      "patterns": ["find nearby hospital", "hospitals near me", "emergency clinic nearby", "medical help close to me"],
+      "responses": ["I cannot access your real-time location automatically. Please search on mapping applications (like Google Maps) for 'hospitals near me' or dial local emergency response (108 in India) for ambulance dispatch.", "In case of emergency, please call local ambulance services directly rather than searching online. For non-emergencies, look up nearby clinical centers via mapping applications."]
+    },
+    {
+      "tag": "doctor_booking",
+      "patterns": ["how to book a doctor", "i want to speak to a doctor", "schedule consultation", "appointment with physician"],
+      "responses": ["You can schedule a consultation by clicking the 'Talk to a Doctor' or 'Consult a Doctor' button on your dashboard. This enters you into our virtual waiting room, and an available clinician will accept your session shortly.", "To connect with a clinical professional, go to the 'Consultations' tab in your sidebar dashboard and click 'Join Queue' to book a live video chat session."]
+    },
+    {
+      "tag": "symptom_checker_help",
+      "patterns": ["how to use symptom checker", "what does the symptom checker do", "check my health score", "symptom predictor guide"],
+      "responses": ["Navigate to the 'Symptom Checker' tab in your sidebar. Select all symptoms you are currently experiencing, then click 'Analyze Symptoms'. The Random Forest model will output the top 3 potential conditions with confidence levels.", "Our Symptom Checker runs statistical classifications on 132 known symptoms. Go to the Symptom Checker page, choose your current indicators, and check the predicted results card."]
+    },
+    {
+      "tag": "reports_help",
+      "patterns": ["how to upload medical report", "where are my files", "check my medical reports", "uploading clinical documents"],
+      "responses": ["To manage your records, go to the 'Medical Reports' tab. There you can upload PDFs or images of your clinical results, view the status, and check doctor feedback notes once reviewed.", "You can upload and organize your medical files in the 'Medical Reports' section of the dashboard. Clinicians can review them during active consultations."]
+    },
+    {
+      "tag": "subscription_help",
+      "patterns": ["how to get premium", "upgrade account price", "what is premium membership", "benefits of premium"],
+      "responses": ["MedAI Premium offers unlimited diagnostic scans, priority queuing for doctor consultations, and permanent medical record storage. Click the 'Upgrade to Premium' banner on your dashboard to complete the checkout.", "Premium members bypass the standard queue wait times and have full access to advanced ML tools. Upgrade directly from the banner link on the dashboard home screen."]
+    },
+    {
+      "tag": "name",
+      "patterns": ["what is your name", "who are you", "what should i call you", "do you have a name"],
+      "responses": ["I am the MedAI Health Assistant, an AI trained to help you understand health symptoms and medical first aid.", "You can call me the MedAI Assistant. I'm here to support your clinical journey!"]
+    },
+    {
+      "tag": "age",
+      "patterns": ["how old are you", "what is your age", "when were you created"],
+      "responses": ["I am a digital health assistant. I don't have an age in years, but I was launched in 2026!", "I exist as software, so I don't age, but I am continuously updated with the latest clinical classification datasets."]
+    },
+    {
+      "tag": "medicine_paracetamol",
+      "patterns": ["what is paracetamol", "when to take acetaminophen", "is paracetamol safe", "paracetamol dosage", "how does acetaminophen work"],
+      "responses": [
+        "Paracetamol (acetaminophen) is widely used to treat mild-to-moderate pain and reduce fever. Normal adult dose is 500mg to 1000mg every 4-6 hours, not exceeding 4000mg (4g) in a 24-hour period. Avoid alcohol while taking it to prevent liver damage.",
+        "Paracetamol helps lower fever and relieve minor body pain. Always consult a clinician for custom dosages, and verify you are not taking other medicines containing paracetamol to prevent an accidental overdose."
+      ]
+    },
+    {
+      "tag": "medicine_ibuprofen",
+      "patterns": ["what is ibuprofen", "advil or motrin query", "ibuprofen side effects", "when to use ibuprofen", "is ibuprofen an nsaid"],
+      "responses": [
+        "Ibuprofen is a Non-Steroidal Anti-Inflammatory Drug (NSAID) used to reduce pain, fever, and inflammation. The standard adult dose is 200mg to 400mg every 4-6 hours, usually taken with food to prevent stomach irritation. Seek advice if you have history of ulcers or kidney issues.",
+        "Ibuprofen manages swelling, pain, and fever. Do not take it on an empty stomach. Consult a doctor if you have cardiovascular or renal concerns before using it."
+      ]
+    },
+    {
+      "tag": "medicine_aspirin",
+      "patterns": ["what is aspirin", "aspirin for heart protection", "should i take aspirin", "aspirin dosage", "bayer aspirin query"],
+      "responses": [
+        "Aspirin (acetylsalicylic acid) is a salicylate used as a pain reliever, anti-inflammatory, and low-dose blood thinner to prevent heart attacks. Avoid giving aspirin to children or teenagers due to the risk of Reye's syndrome.",
+        "Low-dose aspirin is frequently recommended for cardiovascular prevention, while higher doses relieve pain. Consult your cardiologist before starting daily aspirin therapy."
+      ]
+    },
+    {
+      "tag": "medicine_amoxicillin",
+      "patterns": ["what is amoxicillin", "is amoxicillin an antibiotic", "amoxicillin side effects", "how to take amoxicillin", "penicillin amoxicillin query"],
+      "responses": [
+        "Amoxicillin is a penicillin-type antibiotic used to treat bacterial infections (e.g., ear, throat, urinary tract). It is ineffective against viral infections like colds or flu. Complete the entire prescribed course even if symptoms disappear.",
+        "Amoxicillin fights bacterial infections. It requires a doctor's prescription. Take it exactly as directed, and report any rash or allergic symptoms immediately."
+      ]
+    },
+    {
+      "tag": "medicine_cetirizine",
+      "patterns": ["what is cetirizine", "zyrtec cetirizine query", "cetirizine for allergies", "does cetirizine make you sleepy", "cetirizine dosage"],
+      "responses": [
+        "Cetirizine is a second-generation antihistamine used to relieve allergy symptoms like runny nose, sneezing, itchy eyes, and hives. It is generally non-drowsy, though some individuals may still experience mild sleepiness.",
+        "Cetirizine manages seasonal allergies. The typical adult dose is 10mg once daily. Consult a doctor if symptoms persist or if you have kidney disease."
+      ]
+    },
+    {
+      "tag": "medicine_metformin",
+      "patterns": ["what is metformin", "glucophage query", "metformin for diabetes", "metformin side effects", "how to take metformin"],
+      "responses": [
+        "Metformin is an oral medication used to manage blood sugar levels in patients with Type 2 diabetes. It works by improving insulin sensitivity and reducing glucose production by the liver. Common side effects include mild gastrointestinal discomfort.",
+        "Metformin is a first-line treatment for Type 2 diabetes. It is typically taken with meals to minimize stomach upset. Do not stop taking it without consulting your physician."
+      ]
+    },
+    {
+      "tag": "medicine_atorvastatin",
+      "patterns": ["what is atorvastatin", "lipitor query", "atorvastatin for cholesterol", "atorvastatin side effects", "atorvastatin dosage"],
+      "responses": [
+        "Atorvastatin is a statin medication used to lower low-density lipoprotein (LDL) cholesterol and triglycerides while raising HDL cholesterol, reducing the risk of heart attack and stroke. Side effects can include muscle pain; report severe muscle pain to your doctor.",
+        "Atorvastatin is prescribed to manage high cholesterol and support heart health. Take it once daily, with or without food, as directed by your physician."
+      ]
+    },
+    {
+      "tag": "medicine_lisinopril",
+      "patterns": ["what is lisinopril", "lisinopril for high blood pressure", "lisinopril dry cough", "lisinopril side effects", "lisinopril dosage"],
+      "responses": [
+        "Lisinopril is an ACE (Angiotensin-Converting Enzyme) inhibitor used to treat high blood pressure (hypertension) and heart failure, and to improve survival after a heart attack. A persistent dry cough is a known side effect.",
+        "Lisinopril helps lower blood pressure and protect kidney function. Have your blood pressure and kidney function checked regularly while taking this medication."
+      ]
+    },
+    {
+      "tag": "medicine_omeprazole",
+      "patterns": ["what is omeprazole", "prilosec query", "omeprazole for acid reflux", "omeprazole dosage", "when to take omeprazole"],
+      "responses": [
+        "Omeprazole is a Proton Pump Inhibitor (PPI) that reduces stomach acid production. It is used to treat gastroesophageal reflux disease (GERD), heartburn, and stomach ulcers. It is typically taken in the morning before food.",
+        "Omeprazole is highly effective for reducing acid reflux. For optimal results, take it 30-60 minutes before your first meal of the day. Avoid long-term unmonitored use."
+      ]
+    },
+    {
+      "tag": "medicine_insulin",
+      "patterns": ["what is insulin", "insulin injection query", "types of insulin", "how to store insulin", "insulin for diabetes"],
+      "responses": [
+        "Insulin is a hormone that regulates glucose levels in the blood. It is a critical therapy for Type 1 diabetes and is sometimes required for Type 2 diabetes. It is administered via subcutaneous injection.",
+        "Insulin therapy helps manage diabetes. Learn proper injection techniques, monitor your blood sugar closely, and store unused insulin in the refrigerator."
+      ]
+    },
+    {
+      "tag": "nearby_pharmacy",
+      "patterns": ["find nearby pharmacy", "chemist near me", "where can i buy medicines close by", "pharmacy near me", "drugstore nearby"],
+      "responses": [
+        "I cannot access your real-time location. Please use a mapping application (like Google Maps) to search for 'pharmacy near me' or check local directories.",
+        "For buying medicines, check mapping apps for the nearest open pharmacy. If you need immediate prescription delivery, check local e-pharmacy apps."
+      ]
+    },
+    {
+      "tag": "nearby_laboratory",
+      "patterns": ["diagnostic lab near me", "where to get blood test done", "nearby laboratory", "blood test center close by", "pathology lab nearby"],
+      "responses": [
+        "To get diagnostic or blood tests done, search for 'diagnostic labs near me' or 'pathology lab close by' on mapping apps. Many labs also offer home sample collection options.",
+        "For clinical testing, check local laboratory networks or search mapping services for nearby pathology centers."
+      ]
+    },
+    {
+      "tag": "nearby_specialist",
+      "patterns": ["find a cardiologist near me", "dermatologist close by", "pediatrician near me", "how to find a specialist doctor", "neurologist near me"],
+      "responses": [
+        "You can find local medical specialists by searching on our platform's doctor list or using online directories like Practo. For immediate checkups, search 'specialist doctors near me' on maps.",
+        "To consult a specific specialist, use the doctor search filters in our consultations tab or search online directories for certified professionals in your area."
+      ]
+    },
+    {
+      "tag": "ambulance_service",
+      "patterns": ["call an ambulance", "emergency medical transport", "need a medical vehicle", "how to call ambulance", "emergency transport"],
+      "responses": [
+        "For immediate emergency transport, dial your national emergency number (such as 102/108 in India or 911 in the US) to request an ambulance service.",
+        "If you require urgent medical evacuation, please contact local emergency ambulance response services immediately."
+      ]
+    },
+    {
+      "tag": "support_contact",
+      "patterns": ["how to contact support", "customer care details", "helpdesk contact", "speak to admin", "platform support"],
+      "responses": [
+        "You can contact our support team at support@medai.com or by clicking the 'Support Helpdesk' link at the bottom of the dashboard page.",
+        "For platform queries or technical assistance, reach out to our team at support@medai.com."
+      ]
+    },
+    {
+      "tag": "prescription_query",
+      "patterns": ["how to get a prescription", "view my prescription", "where is my prescription query", "doctor prescription question", "access prescription file"],
+      "responses": [
+        "You can view prescriptions written by our clinicians by going to the 'Consultations' tab and selecting your completed session records. A PDF download option is available there.",
+        "Prescriptions are issued by doctors during or after a video call. Once approved, they will appear in your 'Medical Reports' or 'Consultation Details' section for download."
+      ]
+    }
+  ]
+}
+

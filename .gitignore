@@ -1,0 +1,27 @@
+# System files
+.DS_Store
+Thumbs.db
+*.local
+
+# Node/Frontend
+**/node_modules/
+**/.next/
+**/.env*
+**/dist/
+**/out/
+
+# Python/Backend
+**/venv/
+**/.venv/
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.pytest_cache/
+**/.ipynb_checkpoints/
+
+# ML Models/Artifacts (should not be committed to Git due to size)
+**/*.pkl
+**/*.pth
+**/*.h5
+**/*.onnx

@@ -1,0 +1,118 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  USER
+  DOCTOR
+  ADMIN
+}
+
+enum Subscription {
+  FREE
+  PREMIUM
+}
+
+enum ReportStatus {
+  PENDING
+  ANALYZED
+  REVIEWED
+}
+
+enum ConsultationStatus {
+  WAITING
+  ACTIVE
+  COMPLETED
+}
+
+model User {
+  id             String       @id @default(uuid())
+  email          String       @unique
+  name           String?
+  role           Role         @default(USER)
+  passwordHash   String?      @map("password_hash")
+  subscription   Subscription @default(FREE)
+  medicalHistory Json?        @map("medical_history") // JSONB for medical logs/files
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  // Relations
+  predictions             Prediction[]
+  reportsAsPatient        Report[]       @relation("PatientReports")
+  reportsAsDoctor         Report[]       @relation("DoctorReports")
+  consultationsAsPatient  Consultation[] @relation("PatientConsultations")
+  consultationsAsDoctor   Consultation[] @relation("DoctorConsultations")
+  messages                Message[]
+
+  @@map("users")
+}
+
+model Prediction {
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  symptoms        String[] // Array of symptoms
+  results         Json     // Array of objects [{disease: string, confidence: float}]
+  recommendedTest String?  @map("recommended_test")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("predictions")
+}
+
+model Report {
+  id            String       @id @default(uuid())
+  userId        String       @map("user_id")
+  fileUrl       String       @map("file_url")
+  reportType    String       @map("report_type")
+  cnnLabel      String?      @map("cnn_label")
+  cnnConfidence Float?       @map("cnn_confidence")
+  status        ReportStatus @default(PENDING)
+  doctorNotes   String?      @map("doctor_notes")
+  doctorId      String?      @map("doctor_id")
+
+  // Relations
+  patient User  @relation("PatientReports", fields: [userId], references: [id], onDelete: Cascade)
+  doctor  User? @relation("DoctorReports", fields: [doctorId], references: [id], onDelete: SetNull)
+
+  @@map("reports")
+}
+
+model Consultation {
+  id           String             @id @default(uuid()) // Serves as Socket.io Room ID
+  patientId    String             @map("patient_id")
+  doctorId     String             @map("doctor_id")
+  status       ConsultationStatus @default(WAITING)
+  prescription String?            // Doctor's final prescription text
+  createdAt    DateTime           @default(now()) @map("created_at")
+
+  // Relations
+  patient  User      @relation("PatientConsultations", fields: [patientId], references: [id], onDelete: Cascade)
+  doctor   User      @relation("DoctorConsultations", fields: [doctorId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@map("consultations")
+}
+
+model Message {
+  id             String   @id @default(uuid())
+  consultationId String   @map("consultation_id")
+  senderId       String   @map("sender_id")
+  content        String
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  // Relations
+  consultation Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+

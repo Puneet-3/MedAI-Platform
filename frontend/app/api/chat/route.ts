@@ -1,5 +1,4 @@
 import { auth } from "@/auth";
-import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -14,25 +13,25 @@ export async function POST(req: Request) {
     }
 
     // 2. Validate input payload
-    const { symptoms } = await req.json();
-    if (!symptoms || !Array.isArray(symptoms) || symptoms.length === 0) {
+    const { message } = await req.json();
+    if (!message || typeof message !== "string" || !message.trim()) {
       return NextResponse.json(
-        { error: "Invalid payload. 'symptoms' must be a non-empty array of strings." },
+        { error: "Invalid payload. 'message' must be a non-empty string." },
         { status: 400 }
       );
     }
 
-    // 3. Forward request to FastAPI model service
+    // 3. Forward request to FastAPI chatbot service
     const fastapiUrl = process.env.FASTAPI_URL || "http://localhost:8080";
     const fastapiSecret = process.env.FASTAPI_SECRET || "";
 
-    const response = await fetch(`${fastapiUrl}/predict`, {
+    const response = await fetch(`${fastapiUrl}/chat`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "X-FastAPI-Secret": fastapiSecret,
       },
-      body: JSON.stringify({ symptoms }),
+      body: JSON.stringify({ message }),
     });
 
     if (!response.ok) {
@@ -43,28 +42,17 @@ export async function POST(req: Request) {
       );
     }
 
-    const mlData = await response.json(); // Expected format: { results, recommended_test }
+    const mlData = await response.json(); // Expected format: { intent, response, confidence }
 
-    // 4. Save prediction record to database (Supabase via Prisma)
-    const savedPrediction = await db.prediction.create({
-      data: {
-        userId: session.user.id,
-        symptoms: symptoms,
-        results: mlData.results,
-        recommendedTest: mlData.recommended_test || null,
-      },
-    });
-
-    // 5. Respond back to frontend client
+    // 4. Respond back to frontend client
     return NextResponse.json({
-      id: savedPrediction.id,
-      results: mlData.results,
-      recommendedTest: mlData.recommended_test || null,
-      createdAt: savedPrediction.createdAt,
+      intent: mlData.intent,
+      response: mlData.response,
+      confidence: mlData.confidence,
     });
   } catch (err: any) {
-    console.error("Next.js Proxy Predict Error:", err);
-    let errorMsg = "Internal application error processing prediction request.";
+    console.error("Next.js Proxy Chat Error:", err);
+    let errorMsg = "Internal application error processing chat request.";
     
     // Check if the error is due to FastAPI being offline
     if (
@@ -72,7 +60,7 @@ export async function POST(req: Request) {
       err.message?.includes("fetch failed") || 
       err.message?.includes("connect ECONNREFUSED")
     ) {
-      errorMsg = "The AI prediction service is temporarily offline or undergoing maintenance. Please try again in a few moments, or use our consultations portal.";
+      errorMsg = "The AI Health Assistant is temporarily offline or undergoing maintenance. Please try again in a few moments, or check your symptom checker.";
     }
 
     return NextResponse.json(

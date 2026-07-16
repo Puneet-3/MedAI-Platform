@@ -15,13 +15,17 @@ load_dotenv()
 app = FastAPI(title="MedAI Backend Services", version="0.1.0")
 
 # CORS configurations
+origins_str = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000")
+origins = [origin.strip() for origin in origins_str.split(",") if origin.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # Load secret token
 FASTAPI_SECRET = os.getenv("FASTAPI_SECRET")

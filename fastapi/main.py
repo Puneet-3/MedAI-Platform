@@ -43,9 +43,12 @@ chatbot_classes = None
 chatbot_intents = None
 stemmer = PorterStemmer()
 
+# CNN X-Ray resources
+xray_model = None
+
 @app.on_event("startup")
 def load_ml_resources():
-    global model, label_encoder, symptom_mapping, chatbot_model, chatbot_vocabulary, chatbot_classes, chatbot_intents
+    global model, label_encoder, symptom_mapping, chatbot_model, chatbot_vocabulary, chatbot_classes, chatbot_intents, xray_model
     base_dir = os.path.dirname(__file__)
     
     # 1. Symptom Predictor files
@@ -77,6 +80,27 @@ def load_ml_resources():
     else:
         print("WARNING: Chatbot model files are missing.")
 
+    # 3. CNN X-Ray files
+    xray_path = os.path.join(base_dir, "xray_model.pth")
+    if os.path.exists(xray_path):
+        try:
+            import torch
+            import torch.nn as nn
+            import torchvision.models as models
+            
+            # Reconstruct MobileNetV2 architecture with 2 outputs
+            xray_model = models.mobilenet_v2(pretrained=False)
+            xray_model.classifier[-1] = nn.Linear(1280, 2)
+            
+            # Load weights (CPU mapped)
+            xray_model.load_state_dict(torch.load(xray_path, map_location=torch.device("cpu")))
+            xray_model.eval()
+            print("CNN X-Ray model loaded successfully.")
+        except Exception as e:
+            print(f"WARNING: Failed to load CNN X-Ray model: {e}")
+    else:
+        print("WARNING: xray_model.pth is missing.")
+
 # Preprocessing helpers for chatbot
 def clean_tokenize(text):
     return re.findall(r'\w+', text.lower())
@@ -98,6 +122,17 @@ class PredictionRequest(BaseModel):
 
 class ChatRequest(BaseModel):
     message: str
+
+class AnalyzeRequest(BaseModel):
+    image_url: str
+
+class IntentItem(BaseModel):
+    tag: str
+    patterns: list[str]
+    responses: list[str]
+
+class IntentsPayload(BaseModel):
+    intents: list[IntentItem]
 
 @app.get("/health")
 def health():
@@ -162,7 +197,6 @@ def chat_response(payload: ChatRequest):
     bag = get_bag_of_words(tokens, chatbot_vocabulary)
 
     # 2. Predict Probabilities
-    # chatbot_model is an MLPClassifier
     probabilities = chatbot_model.predict_proba([bag])[0]
     top_idx = np.argmax(probabilities)
     confidence = float(probabilities[top_idx])
@@ -190,3 +224,107 @@ def chat_response(payload: ChatRequest):
         "response": response_text,
         "confidence": round(confidence, 4)
     }
+
+# ----------------- Day 17: CNN X-Ray /analyze Endpoint -----------------
+@app.post("/analyze", dependencies=[Depends(verify_secret)])
+def analyze_xray(payload: AnalyzeRequest):
+    global xray_model
+    if not xray_model:
+        raise HTTPException(status_code=503, detail="CNN X-Ray model is not loaded.")
+
+    import urllib.request
+    from io import BytesIO
+    from PIL import Image
+    import torch
+    from torchvision import transforms
+
+    image_url = payload.image_url
+    try:
+        # Check if local upload path
+        if image_url.startswith("/uploads/"):
+            # Resolve physical path in Next.js public directory
+            base_dir = os.path.dirname(__file__)
+            local_path = os.path.abspath(os.path.join(
+                base_dir, "..", "frontend", "public", "uploads", image_url.split("/uploads/")[-1]
+            ))
+            if not os.path.exists(local_path):
+                raise HTTPException(status_code=404, detail="Local report file not found on disk.")
+            img = Image.open(local_path).convert("RGB")
+        else:
+            # Download via HTTP request
+            req = urllib.request.Request(image_url, headers={'User-Agent': 'MedAI Client'})
+            with urllib.request.urlopen(req) as response:
+                img_data = response.read()
+            img = Image.open(BytesIO(img_data)).convert("RGB")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to load image: {e}")
+
+    # ImageNet Preprocessing Pipeline
+    preprocess = transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize(
+            mean=[0.485, 0.456, 0.406],
+            std=[0.229, 0.224, 0.225]
+        )
+    ])
+
+    input_tensor = preprocess(img).unsqueeze(0) # Add batch dimension
+
+    with torch.no_grad():
+        outputs = xray_model(input_tensor)
+        probabilities = torch.nn.functional.softmax(outputs[0], dim=0)
+        top_idx = torch.argmax(probabilities).item()
+        confidence = float(probabilities[top_idx])
+
+    labels = ["Normal", "Pneumonia"]
+    predicted_label = labels[top_idx]
+    
+    # Flagged if pneumonia is predicted
+    flagged = (predicted_label == "Pneumonia")
+
+    return {
+        "label": predicted_label,
+        "confidence": round(confidence, 4),
+        "flagged": flagged
+    }
+
+# ----------------- Day 20: Admin Chatbot & Intent Management Endpoints -----------------
+@app.get("/intents", dependencies=[Depends(verify_secret)])
+def get_intents_file():
+    base_dir = os.path.dirname(__file__)
+    intents_path = os.path.join(base_dir, "intents.json")
+    if not os.path.exists(intents_path):
+        raise HTTPException(status_code=404, detail="intents.json not found on disk.")
+    
+    with open(intents_path, "r") as f:
+        data = json.load(f)
+    return data
+
+@app.post("/intents", dependencies=[Depends(verify_secret)])
+def save_intents_file(payload: IntentsPayload):
+    base_dir = os.path.dirname(__file__)
+    intents_path = os.path.join(base_dir, "intents.json")
+    
+    # Save the updated intents structure
+    try:
+        # Convert Pydantic payload to dictionary
+        data_dict = {"intents": [intent.dict() for intent in payload.intents]}
+        with open(intents_path, "w") as f:
+            json.dump(data_dict, f, indent=2)
+        return {"status": "ok", "message": "intents.json updated successfully."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save intents: {e}")
+
+@app.post("/retrain", dependencies=[Depends(verify_secret)])
+def retrain_chatbot():
+    try:
+        from train_chatbot import train_chatbot
+        print("Starting chatbot retrain pipeline...")
+        train_chatbot()
+        
+        # Reload chatbot resources in-memory
+        load_ml_resources()
+        return {"status": "ok", "message": "MLP Chatbot retrained and reloaded successfully."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Retraining failed: {e}")

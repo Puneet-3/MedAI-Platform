@@ -4,7 +4,7 @@ import { Sidebar } from "@/components/sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserProfileMenu } from "@/components/user-profile-menu";
 
-export default async function DashboardLayout({
+export default async function DoctorLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -13,6 +13,10 @@ export default async function DashboardLayout({
 
   if (!session || !session.user) {
     redirect("/login");
+  }
+
+  if (session.user.role !== "DOCTOR") {
+    redirect("/unauthorized");
   }
 
   return (
@@ -26,7 +30,7 @@ export default async function DashboardLayout({
         <header className="h-16 flex items-center justify-between px-6 md:px-8 border-b border-neutral-200/60 dark:border-neutral-800 bg-white/70 dark:bg-neutral-950/70 backdrop-blur-md sticky top-0 z-30">
           <div className="flex items-center gap-4">
             <span className="hidden md:inline-block text-sm font-semibold text-neutral-800 dark:text-neutral-200">
-              Workspace / Patient Dashboard
+              Workspace / Clinical Portal
             </span>
           </div>
 

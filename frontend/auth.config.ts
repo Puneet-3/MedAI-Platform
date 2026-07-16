@@ -26,10 +26,19 @@ export const authConfig = {
       if (isDashboard || isDoctor || isAdmin) {
         if (!isLoggedIn) return false; // Redirects to login page
 
-        // Role-based authorization checks
-        if (isDashboard && userRole !== "USER") {
-          return Response.redirect(new URL("/unauthorized", nextUrl));
+        // Redirect DOCTOR/ADMIN from patient dashboard to their respective dashboards
+        if (isDashboard) {
+          if (userRole === "DOCTOR") {
+            return Response.redirect(new URL("/doctor/dashboard", nextUrl));
+          }
+          if (userRole === "ADMIN") {
+            return Response.redirect(new URL("/admin", nextUrl));
+          }
+          if (userRole !== "USER") {
+            return Response.redirect(new URL("/unauthorized", nextUrl));
+          }
         }
+        
         if (isDoctor && userRole !== "DOCTOR") {
           return Response.redirect(new URL("/unauthorized", nextUrl));
         }

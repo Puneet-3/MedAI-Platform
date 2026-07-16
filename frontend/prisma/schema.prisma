@@ -90,14 +90,14 @@ model Report {
 model Consultation {
   id           String             @id @default(uuid()) // Serves as Socket.io Room ID
   patientId    String             @map("patient_id")
-  doctorId     String             @map("doctor_id")
+  doctorId     String?            @map("doctor_id")
   status       ConsultationStatus @default(WAITING)
   prescription String?            // Doctor's final prescription text
   createdAt    DateTime           @default(now()) @map("created_at")
 
   // Relations
   patient  User      @relation("PatientConsultations", fields: [patientId], references: [id], onDelete: Cascade)
-  doctor   User      @relation("DoctorConsultations", fields: [doctorId], references: [id], onDelete: Cascade)
+  doctor   User?     @relation("DoctorConsultations", fields: [doctorId], references: [id], onDelete: Cascade)
   messages Message[]
 
   @@map("consultations")

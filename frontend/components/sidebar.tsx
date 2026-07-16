@@ -11,24 +11,48 @@ import {
   Bot, 
   Menu,
   X,
-  HeartPulse
+  HeartPulse,
+  MapPin
 } from "lucide-react";
 import { useState } from "react";
 
-const navItems = [
+interface SidebarProps {
+  user?: {
+    role?: string;
+    name?: string | null;
+    [key: string]: any;
+  };
+}
+
+const patientNavItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/symptom-checker", label: "Symptom Checker", icon: Activity },
   { href: "/dashboard/history", label: "Prediction History", icon: History },
   { href: "/dashboard/reports", label: "Medical Reports", icon: FileText },
   { href: "/dashboard/consultations", label: "Consultations", icon: Video },
   { href: "/dashboard/chatbot", label: "AI Health Assistant", icon: Bot },
+  { href: "/dashboard/nearby", label: "Facility Finder", icon: MapPin },
 ];
 
-export function Sidebar() {
+const doctorNavItems = [
+  { href: "/doctor/dashboard", label: "Doctor Dashboard", icon: LayoutDashboard },
+];
+
+const adminNavItems = [
+  { href: "/admin", label: "Admin Dashboard", icon: LayoutDashboard },
+];
+
+export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
 
   const toggleSidebar = () => setIsOpen(!isOpen);
+
+  const navItems = user?.role === "ADMIN"
+    ? adminNavItems
+    : user?.role === "DOCTOR"
+      ? doctorNavItems
+      : patientNavItems;
 
   return (
     <>

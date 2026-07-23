@@ -76,10 +76,8 @@ npx prisma db push
 ```bash
 cd fastapi
 python -m venv venv
-# On Windows PowerShell:
+# On PowerShell:
 .\venv\Scripts\activate
-# On Linux/macOS:
-source venv/bin/activate
 
 pip install -r requirements.txt
 # Alternatively, install key packages:

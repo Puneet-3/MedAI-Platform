@@ -51,10 +51,10 @@ export default function RegisterPage() {
           <HeartPulse className="h-8 w-8" />
         </div>
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-neutral-900">
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900">
             Create your account
           </h2>
-          <p className="text-xs text-neutral-550 mt-1">
+          <p className="text-xs text-neutral-600 mt-1">
             Join MedAI to access smart diagnostics and doctor queues
           </p>
         </div>
@@ -71,7 +71,7 @@ export default function RegisterPage() {
 
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
-              <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider">
+              <label className="block text-xs font-bold text-neutral-600 uppercase tracking-wider mb-1">
                 Full Name
               </label>
               <input
@@ -80,12 +80,12 @@ export default function RegisterPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="John Doe"
-                className="mt-1 block w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-xs text-neutral-850 placeholder-neutral-400"
+                className="block w-full px-3.5 py-2.5 rounded-xl border border-neutral-300 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-xs text-slate-900 font-medium placeholder-neutral-400 transition-colors"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider">
+              <label className="block text-xs font-bold text-neutral-600 uppercase tracking-wider mb-1">
                 Email Address
               </label>
               <input
@@ -94,12 +94,12 @@ export default function RegisterPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@example.com"
-                className="mt-1 block w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-xs text-neutral-850 placeholder-neutral-400"
+                className="block w-full px-3.5 py-2.5 rounded-xl border border-neutral-300 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-xs text-slate-900 font-medium placeholder-neutral-400 transition-colors"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider">
+              <label className="block text-xs font-bold text-neutral-600 uppercase tracking-wider mb-1">
                 Password
               </label>
               <input
@@ -108,18 +108,18 @@ export default function RegisterPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="mt-1 block w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-xs text-neutral-850 placeholder-neutral-400"
+                className="block w-full px-3.5 py-2.5 rounded-xl border border-neutral-300 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-xs text-slate-900 font-medium placeholder-neutral-400 transition-colors"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider">
+              <label className="block text-xs font-bold text-neutral-600 uppercase tracking-wider mb-1">
                 Account Role
               </label>
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
-                className="mt-1 block w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-xs text-neutral-850"
+                className="block w-full px-3.5 py-2.5 rounded-xl border border-neutral-300 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-xs text-slate-900 font-medium transition-colors"
               >
                 <option value="USER">Patient / General User</option>
                 <option value="DOCTOR">Clinical Doctor</option>
@@ -130,7 +130,7 @@ export default function RegisterPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-md text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors shadow-emerald-650/10"
+                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-md text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors shadow-emerald-600/10"
               >
                 {loading ? "Creating Account..." : "Register"}
               </button>
@@ -138,11 +138,11 @@ export default function RegisterPage() {
           </form>
 
           <div className="mt-6 border-t border-neutral-100 pt-4 text-center">
-            <p className="text-xs text-neutral-500">
+            <p className="text-xs text-neutral-600">
               Already have an account?{" "}
               <Link
                 href="/login"
-                className="font-bold text-emerald-650 hover:text-emerald-750"
+                className="font-bold text-emerald-600 hover:text-emerald-700"
               >
                 Sign in here
               </Link>

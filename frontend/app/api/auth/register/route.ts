@@ -46,8 +46,9 @@ export async function POST(req: Request) {
     });
   } catch (err: any) {
     console.error("Registration Error:", err);
+    const errorMessage = err?.message || "Database connection error.";
     return NextResponse.json(
-      { error: "Failed to register user due to an internal error." },
+      { error: `Registration error: ${errorMessage}` },
       { status: 500 }
     );
   }

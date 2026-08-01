@@ -74,6 +74,7 @@ export async function GET(
       success: true,
       consultation,
       latestPrediction,
+      currentUserId: userId,
     });
   } catch (error: any) {
     console.error("Fetch consultation details error:", error);

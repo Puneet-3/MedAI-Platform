@@ -88,7 +88,9 @@ export default function DoctorConsultationRoomPage({
       setPrescription(data.consultation.prescription || "");
       
       // Determine current user ID (doctor ID)
-      if (data.consultation && data.consultation.doctorId) {
+      if (data.currentUserId) {
+        currentUserId.current = data.currentUserId;
+      } else if (data.consultation && data.consultation.doctorId) {
         currentUserId.current = data.consultation.doctorId;
       }
     } catch (err: any) {
@@ -234,34 +236,42 @@ export default function DoctorConsultationRoomPage({
         <div className="flex-1 p-6 overflow-y-auto space-y-4 max-h-[40vh] min-h-[30vh]">
           {messages.length > 0 ? (
             messages.map((m) => {
-              const isMe = m.senderId === consultation.doctorId;
+              // Sender (Doctor/Me) = Right side, Receiver (Patient) = Left side
+              const isPatient = m.senderId === consultation.patientId || m.sender?.role === "USER";
+              const isMe = !isPatient;
+
               return (
                 <div
                   key={m.id}
-                  className={`flex ${isMe ? "justify-end" : "justify-start"} items-start gap-2`}
+                  className={`flex ${isMe ? "justify-end" : "justify-start"} items-start gap-2.5 my-1.5`}
                 >
                   {!isMe && (
-                    <div className="w-7 h-7 rounded-full bg-indigo-55/10 text-indigo-650 flex items-center justify-center font-extrabold text-[10px] shrink-0">
+                    <div className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-black text-[10px] shrink-0 shadow-sm mt-1">
                       Pt
                     </div>
                   )}
-                  <div
-                    className={`max-w-[70%] rounded-2xl px-4 py-2.5 text-xs ${
-                      isMe
-                        ? "bg-indigo-600 text-white rounded-tr-none"
-                        : "bg-neutral-100 dark:bg-neutral-850 text-neutral-800 dark:text-neutral-200 rounded-tl-none"
-                    }`}
-                  >
-                    {!isMe && (
-                      <span className="block text-[8px] font-black text-indigo-750 dark:text-indigo-400 uppercase tracking-widest mb-0.5">
-                        {m.sender.name} (Patient)
-                      </span>
-                    )}
-                    <p className="leading-relaxed">{m.content}</p>
-                    <span className="block text-[8px] text-right mt-1 opacity-70">
-                      {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  <div className={`max-w-[70%] flex flex-col ${isMe ? "items-end" : "items-start"}`}>
+                    <span className="text-[9px] font-bold text-neutral-400 mb-0.5 px-1">
+                      {isMe ? "You (Doctor)" : (m.sender?.name || consultation.patient.name || "Patient")}
                     </span>
+                    <div
+                      className={`rounded-2xl px-4 py-2.5 text-xs shadow-sm ${
+                        isMe
+                          ? "bg-indigo-600 text-white rounded-tr-none"
+                          : "bg-slate-100 dark:bg-neutral-800 text-slate-800 dark:text-neutral-100 border border-slate-200/60 dark:border-neutral-700 rounded-tl-none"
+                      }`}
+                    >
+                      <p className="leading-relaxed whitespace-pre-wrap">{m.content}</p>
+                      <span className={`block text-[8px] text-right mt-1 opacity-75 ${isMe ? "text-indigo-100" : "text-slate-400"}`}>
+                        {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
                   </div>
+                  {isMe && (
+                    <div className="w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center font-black text-[10px] shrink-0 shadow-sm mt-1">
+                      Dr
+                    </div>
+                  )}
                 </div>
               );
             })

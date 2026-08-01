@@ -86,7 +86,9 @@ export default function PatientConsultationRoomPage({
       setLatestPrediction(data.latestPrediction);
       
       // Determine current user ID (patient ID)
-      if (data.consultation) {
+      if (data.currentUserId) {
+        currentUserId.current = data.currentUserId;
+      } else if (data.consultation) {
         currentUserId.current = data.consultation.patientId;
       }
     } catch (err: any) {
@@ -298,34 +300,42 @@ export default function PatientConsultationRoomPage({
         <div className="flex-1 p-6 overflow-y-auto space-y-4 max-h-[45vh] min-h-[35vh]">
           {messages.length > 0 ? (
             messages.map((m) => {
-              const isMe = m.senderId === consultation.patientId;
+              // Sender (Patient/Me) = Right side, Receiver (Doctor) = Left side
+              const isDoctor = m.senderId === consultation.doctorId || m.sender?.role === "DOCTOR";
+              const isMe = !isDoctor;
+
               return (
                 <div
                   key={m.id}
-                  className={`flex ${isMe ? "justify-end" : "justify-start"} items-start gap-2`}
+                  className={`flex ${isMe ? "justify-end" : "justify-start"} items-start gap-2.5 my-1.5`}
                 >
                   {!isMe && (
-                    <div className="w-7 h-7 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-[10px] shrink-0">
+                    <div className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-black text-[10px] shrink-0 shadow-sm mt-1">
                       Dr
                     </div>
                   )}
-                  <div
-                    className={`max-w-[70%] rounded-2xl px-4 py-2.5 text-xs ${
-                      isMe
-                        ? "bg-indigo-600 text-white rounded-tr-none"
-                        : "bg-neutral-100 dark:bg-neutral-850 text-neutral-800 dark:text-neutral-200 rounded-tl-none"
-                    }`}
-                  >
-                    {!isMe && (
-                      <span className="block text-[8px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest mb-0.5">
-                        Dr. {m.sender.name}
-                      </span>
-                    )}
-                    <p className="leading-relaxed">{m.content}</p>
-                    <span className="block text-[8px] text-right mt-1 opacity-70">
-                      {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  <div className={`max-w-[70%] flex flex-col ${isMe ? "items-end" : "items-start"}`}>
+                    <span className="text-[9px] font-bold text-neutral-400 mb-0.5 px-1">
+                      {isMe ? "You (Patient)" : `Dr. ${m.sender?.name || consultation.doctor?.name || "Clinical Doctor"}`}
                     </span>
+                    <div
+                      className={`rounded-2xl px-4 py-2.5 text-xs shadow-sm ${
+                        isMe
+                          ? "bg-emerald-600 text-white rounded-tr-none"
+                          : "bg-slate-100 dark:bg-neutral-800 text-slate-800 dark:text-neutral-100 border border-slate-200/60 dark:border-neutral-700 rounded-tl-none"
+                      }`}
+                    >
+                      <p className="leading-relaxed whitespace-pre-wrap">{m.content}</p>
+                      <span className={`block text-[8px] text-right mt-1 opacity-75 ${isMe ? "text-emerald-100" : "text-slate-400"}`}>
+                        {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
                   </div>
+                  {isMe && (
+                    <div className="w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center font-black text-[10px] shrink-0 shadow-sm mt-1">
+                      Pt
+                    </div>
+                  )}
                 </div>
               );
             })

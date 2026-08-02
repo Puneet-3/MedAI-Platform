@@ -138,9 +138,26 @@ class IntentItem(BaseModel):
 class IntentsPayload(BaseModel):
     intents: list[IntentItem]
 
+@app.get("/")
+def root():
+    return {
+        "service": "MedAI Backend Microservices API",
+        "version": app.version,
+        "status": "online",
+        "docs_url": "/docs",
+    }
+
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "version": app.version,
+        "models_loaded": {
+            "symptom_predictor": model is not None and label_encoder is not None and symptom_mapping is not None,
+            "chatbot": chatbot_model is not None,
+            "xray_analyzer": xray_model is not None,
+        },
+    }
 
 @app.post("/predict", dependencies=[Depends(verify_secret)])
 def predict_disease(payload: PredictionRequest):

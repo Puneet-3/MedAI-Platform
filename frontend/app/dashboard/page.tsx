@@ -1,10 +1,10 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { 
-  Activity, 
-  Video, 
-  FileText, 
+import {
+  Activity,
+  Video,
+  FileText,
   ArrowRight,
   ShieldCheck,
   Zap

@@ -48,42 +48,44 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF9F5] flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans transition-all duration-300">
+    <div className="min-h-screen bg-gradient-to-b from-[#FFF5F8] via-[#F8FBFE] to-[#F1F6FB] flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans transition-all duration-300">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center space-y-4">
         {/* Logo */}
-        <div className="inline-flex p-3 rounded-2xl bg-emerald-600 text-white shadow-md shadow-emerald-600/10">
-          <HeartPulse className="h-8 w-8" />
-        </div>
+        <Link href="/" className="inline-block group py-2">
+          <span className="font-serif text-3xl sm:text-4xl font-normal text-neutral-900 tracking-tight group-hover:opacity-75 transition-opacity">
+            MedAI
+          </span>
+        </Link>
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">
+          <h2 className="text-2xl font-black tracking-tight text-[#173364]">
             Sign in to MedAI
           </h2>
-          <p className="text-xs text-neutral-600 mt-1">
+          <p className="text-xs text-slate-600 mt-1">
             Access your patient dashboard, diagnostic results, and chatbot
           </p>
         </div>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-6 shadow-sm border border-neutral-200/50 rounded-2xl sm:px-10">
+        <div className="bg-white py-8 px-6 shadow-xl shadow-slate-200/50 border border-pink-100 rounded-3xl sm:px-10">
           
           {registered && (
-            <div className="mb-4 p-3.5 rounded-xl bg-emerald-50/50 border border-emerald-200/40 flex gap-2 text-emerald-800 text-xs font-semibold">
-              <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <div className="mb-4 p-3.5 rounded-xl bg-pink-50 border border-pink-200/60 flex gap-2 text-[#9D174D] text-xs font-semibold">
+              <CheckCircle2 className="w-4 h-4 shrink-0 text-[#E86591]" />
               <span>Registration successful! Please sign in below.</span>
             </div>
           )}
 
           {error && (
-            <div className="mb-4 p-3.5 rounded-xl bg-red-50/50 border border-red-200/40 flex gap-2 text-red-800 text-xs font-semibold">
-              <AlertCircle className="w-4 h-4 shrink-0" />
+            <div className="mb-4 p-3.5 rounded-xl bg-red-50 border border-red-200/60 flex gap-2 text-red-800 text-xs font-semibold">
+              <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
               <span>{error}</span>
             </div>
           )}
 
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
-              <label className="block text-xs font-bold text-neutral-600 uppercase tracking-wider mb-1">
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                 Email Address
               </label>
               <input
@@ -92,12 +94,12 @@ function LoginForm() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@example.com"
-                className="block w-full px-3.5 py-2.5 rounded-xl border border-neutral-300 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-xs text-slate-900 font-medium placeholder-neutral-400 transition-colors"
+                className="block w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-[#E86591] text-xs text-slate-900 font-medium placeholder-slate-400 transition-colors"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-neutral-600 uppercase tracking-wider mb-1">
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                 Password
               </label>
               <input
@@ -106,7 +108,7 @@ function LoginForm() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="block w-full px-3.5 py-2.5 rounded-xl border border-neutral-300 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-xs text-slate-900 font-medium placeholder-neutral-400 transition-colors"
+                className="block w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-[#E86591] text-xs text-slate-900 font-medium placeholder-slate-400 transition-colors"
               />
             </div>
 
@@ -114,19 +116,19 @@ function LoginForm() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-md text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors shadow-emerald-600/10"
+                className="w-full flex justify-center py-3 px-4 rounded-xl shadow-md text-xs font-bold text-white bg-gradient-to-r from-[#E86591] to-[#38BDF8] hover:from-[#DF5483] hover:to-[#0284C7] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-all shadow-pink-500/20"
               >
                 {loading ? "Signing in..." : "Sign In"}
               </button>
             </div>
           </form>
 
-          <div className="mt-6 border-t border-neutral-100 pt-4 text-center">
-            <p className="text-xs text-neutral-600">
+          <div className="mt-6 border-t border-slate-100 pt-4 text-center">
+            <p className="text-xs text-slate-600">
               Don't have an account yet?{" "}
               <Link
                 href="/register"
-                className="font-bold text-emerald-600 hover:text-emerald-700"
+                className="font-bold text-[#E86591] hover:text-[#0284C7] transition-colors"
               >
                 Register a new account
               </Link>
@@ -141,9 +143,9 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-[#FAF9F5] flex flex-col justify-center items-center font-sans">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-emerald-600 border-t-transparent" />
-        <span className="text-xs text-neutral-500 mt-2 font-medium">Loading sign-in...</span>
+      <div className="min-h-screen bg-gradient-to-b from-[#FFF5F8] via-[#F8FBFE] to-[#F1F6FB] flex flex-col justify-center items-center font-sans">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-[#E86591] border-t-transparent" />
+        <span className="text-xs text-slate-500 mt-2 font-medium">Loading sign-in...</span>
       </div>
     }>
       <LoginForm />

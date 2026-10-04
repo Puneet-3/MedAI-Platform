@@ -78,7 +78,7 @@ export default async function Home() {
         <section className="pt-4 pb-2 space-y-10">
           {/* Giant Full-Width Editorial Headline */}
           <h1 className="font-serif text-5xl sm:text-6xl md:text-7xl lg:text-[84px] xl:text-[94px] font-normal tracking-tight text-neutral-900 leading-[1.04]">
-            Elevated Wellness, Tailored
+            The Science of Living Well
           </h1>
 
           {/* 2-Column Split below headline */}
@@ -87,7 +87,7 @@ export default async function Home() {
             {/* Left Column: Lowered Descriptor Text & Black Oval Discover Button */}
             <div className="lg:col-span-6 flex flex-col justify-end pb-4 space-y-6">
               <p className="text-base sm:text-lg text-neutral-800 font-normal leading-relaxed max-w-sm">
-                Curated health essentials and personalized guidance for the discerning individual.
+                Intuitive clinical intelligence and personalized health guidance, crafted for a calmer, healthier life.
               </p>
 
               <div>
@@ -100,12 +100,12 @@ export default async function Home() {
               </div>
             </div>
 
-            {/* Right Column: Clean Vertical Interior Photograph */}
+            {/* Right Column: Clean Vertical Wellbeing Lifestyle Photograph */}
             <div className="lg:col-span-6 relative">
-              <div className="relative rounded-2xl overflow-hidden shadow-sm aspect-[4/4.5] sm:aspect-[4/4.2] w-full max-w-md ml-auto bg-neutral-100">
+              <div className="relative rounded-2xl overflow-hidden shadow-sm aspect-[3/4] w-full max-w-md ml-auto bg-neutral-100">
                 <img
-                  src="/hero_interior.png"
-                  alt="Elevated Wellness Space"
+                  src="/wellbeing_hero.jpg"
+                  alt="Holistic Wellbeing and Mindful Health"
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -460,7 +460,7 @@ export default async function Home() {
 
           <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-4 border-t border-neutral-100 text-[11px] text-neutral-400">
             <p>© {new Date().getFullYear()} MedAI Health Technologies. All rights reserved.</p>
-            <p>Elevated Wellness, Tailored.</p>
+            <p>The Science of Living Well.</p>
           </div>
         </footer>
 

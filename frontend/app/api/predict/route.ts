@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { inference, InferenceError } from "@/lib/inference";
 import { NextResponse } from "next/server";
 interface PredictionResponse { results: { disease: string; confidence: number }[]; recommended_test: string | null; }
+export const maxDuration = 60;
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user || session.user.role !== "USER") return NextResponse.json({ error: "Please sign in as a patient." }, { status: 401 });

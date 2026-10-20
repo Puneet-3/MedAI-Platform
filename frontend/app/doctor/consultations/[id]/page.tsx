@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState, useEffect, useRef, use } from "react";
+import React, { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
-import { io, Socket } from "socket.io-client";
+import { useConsultationChat } from "@/hooks/use-consultation-chat";
+import { useChatScroll } from "@/hooks/use-chat-scroll";
+import { mergeMessages } from "@/lib/chat-messages";
 import {
   Send,
   ArrowLeft,
@@ -66,17 +68,16 @@ export default function DoctorConsultationRoomPage({
   const [latestPrediction, setLatestPrediction] = useState<PredictionData | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [socketToken, setSocketToken] = useState<string | null>(null);
-  const [connected, setConnected] = useState(false);
-  const [sending, setSending] = useState(false);
   const [inputText, setInputText] = useState("");
   const [prescription, setPrescription] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const socketRef = useRef<Socket | null>(null);
-  const messageEndRef = useRef<HTMLDivElement | null>(null);
-  const currentUserId = useRef<string>("");
+  const [currentUserId, setCurrentUserId] = useState("");
+  const { connected, sending, sendMessage } = useConsultationChat({ id, status: consultation?.status, token: socketToken, setMessages });
+  const lastMessage = messages.at(-1);
+  const { messagesRef, onMessagesScroll } = useChatScroll(lastMessage?.id, lastMessage?.senderId === currentUserId);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -84,62 +85,45 @@ export default function DoctorConsultationRoomPage({
       .then(async response => {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "We couldn't load this page.");
-        if (!controller.signal.aborted) { setConsultation(data.consultation); setSocketToken(data.socketToken); setMessages(data.consultation.messages || []); setLatestPrediction(data.latestPrediction); currentUserId.current = data.currentUserId; setPrescription(data.consultation.prescription || ""); }
+        if (!controller.signal.aborted) { setConsultation(data.consultation); setSocketToken(data.socketToken); setMessages(data.consultation.messages || []); setLatestPrediction(data.latestPrediction); setCurrentUserId(data.currentUserId); setPrescription(data.consultation.prescription || ""); }
       })
       .catch((error: unknown) => { if (!controller.signal.aborted) setError(error instanceof Error ? error.message : "We couldn't load this page."); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, [id]);
 
+  // The saved conversation remains usable even while the live service reconnects.
   useEffect(() => {
-    if (!socketToken || consultation?.status !== "ACTIVE") return;
-    const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3001", { auth: { token: socketToken } });
-    socketRef.current = socket;
-    socket.on("connect", () => { setConnected(true); setError(null); });
-    socket.on("disconnect", () => setConnected(false));
-    socket.on("connect_error", () => {
-      setConnected(false);
-      setError("Chat couldn't connect. Please refresh the page to reconnect.");
-    });
-    socket.on("receive_message", (msg: Message) => {
-      setMessages(prev => prev.some(m => m.id === msg.id) ? prev : [...prev, msg]);
-    });
-    return () => { socket.disconnect(); socketRef.current = null; };
-  }, [socketToken, consultation?.status]);
-
-  // Polling restores missed messages after reconnecting and updates waiting rooms.
-  useEffect(() => {
-    const interval = setInterval(async () => {
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const controller = new AbortController();
+    const refresh = async () => {
       try {
-        const res = await fetch(`/api/consultations/${id}`);
-        const data = await res.json();
-        if (res.ok) {
+        const response = await fetch(`/api/consultations/${id}`, { cache: "no-store", signal: controller.signal });
+        const data = await response.json();
+        if (!stopped && response.ok) {
           setConsultation(data.consultation);
-          setMessages(data.consultation.messages || []);
+          setLatestPrediction(data.latestPrediction);
+          setMessages(previous => mergeMessages(previous, data.consultation.messages || []));
           setSocketToken(previous => previous || data.socketToken);
         }
-      } catch { /* Keep the last known room visible during a brief outage. */ }
-    }, 5000);
-    return () => clearInterval(interval);
+      } catch { /* Keep the conversation visible during a brief network outage. */ }
+      finally { if (!stopped) timer = setTimeout(refresh, 3000); }
+    };
+    timer = setTimeout(refresh, 3000);
+    return () => { stopped = true; controller.abort(); clearTimeout(timer); };
   }, [id]);
 
-  // Scroll to bottom on new message
-  useEffect(() => {
-    messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  const handleSend = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputText.trim() || !connected || sending || consultation?.status !== "ACTIVE") return;
-    setSending(true);
+  const handleSend = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const content = inputText.trim();
+    if (!content || sending || consultation?.status !== "ACTIVE") return;
     setError(null);
-    socketRef.current?.timeout(10000).emit("send_message", {
-      consultationId: id, content: inputText.trim(),
-    }, (timeout: Error | null, result: { error?: string }) => {
-      setSending(false);
-      if (timeout || result?.error) setError(result?.error || "Your message wasn't confirmed. Check the conversation before trying again.");
-      else setInputText("");
-    });
+    try {
+      if (await sendMessage(content)) setInputText(previous => previous.trim() === content ? "" : previous);
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : "Your message could not be sent. Please try again.");
+    }
   };
   const handleCompleteSession = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -198,7 +182,7 @@ export default function DoctorConsultationRoomPage({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 min-h-[75vh] items-stretch animate-in fade-in duration-500 font-sans">
 
-      {error && <p role="alert" className="rounded-xl bg-amber-50 p-4 text-sm text-amber-800 lg:col-span-12">{error}</p>}
+      {error && <p role="alert" className="rounded-xl bg-amber-50 p-4 text-sm text-amber-800 dark:bg-amber-950 dark:text-amber-200 lg:col-span-12">{error}</p>}
       {/* Left Column: Chat Room & Messages */}
       <div className="lg:col-span-8 flex flex-col bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-3xl overflow-hidden shadow-sm">
 
@@ -216,9 +200,9 @@ export default function DoctorConsultationRoomPage({
               <h3 className="text-xs font-bold text-neutral-800 dark:text-neutral-200">
                 Patient: {consultation.patient.name || "Anonymous Patient"}
               </h3>
-              <p className="text-[11px] text-neutral-400 dark:text-neutral-500 flex items-center gap-1">
+              <p className="text-[11px] text-neutral-600 dark:text-neutral-400 flex items-center gap-1">
                 <span className={`w-1.5 h-1.5 rounded-full ${isCompleted ? "bg-neutral-400" : "bg-teal-500 animate-pulse"}`} />
-                {isCompleted ? "Consultation Completed" : "Consultation Active"}
+                {isCompleted ? "Consultation Completed" : (connected ? "Connected" : "Messages update automatically")}
               </p>
             </div>
           </div>
@@ -229,7 +213,7 @@ export default function DoctorConsultationRoomPage({
         </header>
 
         {/* Message History */}
-        <div className="flex-1 p-6 overflow-y-auto space-y-4 max-h-[40vh] min-h-[30vh]">
+        <div ref={messagesRef} onScroll={onMessagesScroll} className="flex-1 p-6 overflow-y-auto overscroll-contain space-y-4 max-h-[40vh] min-h-[30vh]">
           {messages.length > 0 ? (
             messages.map((m) => {
               // Sender (Doctor/Me) = Right side, Receiver (Patient) = Left side
@@ -253,7 +237,7 @@ export default function DoctorConsultationRoomPage({
                     <div
                       className={`rounded-2xl px-4 py-2.5 text-xs shadow-sm ${
                         isMe
-                          ? "bg-teal-600 text-white rounded-tr-none"
+                          ? "bg-teal-700 text-white rounded-tr-none"
                           : "bg-slate-100 dark:bg-neutral-800 text-slate-800 dark:text-neutral-100 border border-slate-200 dark:border-neutral-700 rounded-tl-none"
                       }`}
                     >
@@ -264,7 +248,7 @@ export default function DoctorConsultationRoomPage({
                     </div>
                   </div>
                   {isMe && (
-                    <div className="w-7 h-7 rounded-full bg-teal-600 text-white flex items-center justify-center font-semibold text-xs shrink-0 shadow-sm mt-1">
+                    <div className="w-7 h-7 rounded-full bg-teal-700 text-white flex items-center justify-center font-semibold text-xs shrink-0 shadow-sm mt-1">
                       Dr
                     </div>
                   )}
@@ -282,7 +266,6 @@ export default function DoctorConsultationRoomPage({
               </p>
             </div>
           )}
-          <div ref={messageEndRef} />
         </div>
 
         {/* Prescription Completed Notice */}
@@ -308,13 +291,13 @@ export default function DoctorConsultationRoomPage({
               onChange={(e) => setInputText(e.target.value)}
               maxLength={4000}
               aria-label="Message to patient"
-              placeholder={connected ? "Type your message to the patient..." : "Connecting to chat..."}
+              placeholder="Type your message to the patient..."
               className="flex-1 px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 text-xs text-neutral-800"
             />
             <button
               type="submit"
-              disabled={!connected || sending || !inputText.trim()}
-              className="p-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 disabled:bg-neutral-100 disabled:text-neutral-400 text-white transition-all shadow-sm"
+              disabled={sending || !inputText.trim() || consultation.status !== "ACTIVE"}
+              className="p-2.5 rounded-xl bg-teal-700 hover:bg-teal-800 disabled:bg-neutral-100 disabled:text-neutral-500 dark:disabled:bg-neutral-800 dark:disabled:text-neutral-400 text-white transition-all shadow-sm"
               aria-label="Send message"
             >
               <Send className="w-4 h-4" />
@@ -339,7 +322,7 @@ export default function DoctorConsultationRoomPage({
 
           <form onSubmit={handleCompleteSession} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-1.5">
+              <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-widest mb-1.5">
                 Treatment Plan & Notes
               </label>
               <textarea
@@ -357,7 +340,7 @@ export default function DoctorConsultationRoomPage({
               <button
                 type="submit"
                 disabled={submitLoading || !prescription.trim()}
-                className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-neutral-100 disabled:text-neutral-400 disabled:cursor-not-allowed text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-md shadow-emerald-600/10"
+                className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-3 bg-emerald-700 hover:bg-emerald-800 disabled:bg-neutral-100 disabled:text-neutral-500 dark:disabled:bg-neutral-800 dark:disabled:text-neutral-400 disabled:cursor-not-allowed text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-md shadow-emerald-600/10"
               >
                 {submitLoading ? (
                   <>

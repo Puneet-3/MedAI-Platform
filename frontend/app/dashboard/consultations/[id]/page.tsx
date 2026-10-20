@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState, useEffect, useRef, use } from "react";
+import React, { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
-import { io, Socket } from "socket.io-client";
+import { useConsultationChat } from "@/hooks/use-consultation-chat";
+import { useChatScroll } from "@/hooks/use-chat-scroll";
+import { mergeMessages } from "@/lib/chat-messages";
 import {
   Send,
   ArrowLeft,
@@ -66,15 +68,14 @@ export default function PatientConsultationRoomPage({
   const [latestPrediction, setLatestPrediction] = useState<PredictionData | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [socketToken, setSocketToken] = useState<string | null>(null);
-  const [connected, setConnected] = useState(false);
-  const [sending, setSending] = useState(false);
   const [inputText, setInputText] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const socketRef = useRef<Socket | null>(null);
-  const messageEndRef = useRef<HTMLDivElement | null>(null);
-  const currentUserId = useRef<string>("");
+  const [currentUserId, setCurrentUserId] = useState("");
+  const { connected, sending, sendMessage } = useConsultationChat({ id, status: consultation?.status, token: socketToken, setMessages });
+  const lastMessage = messages.at(-1);
+  const { messagesRef, onMessagesScroll } = useChatScroll(lastMessage?.id, lastMessage?.senderId === currentUserId);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -82,62 +83,45 @@ export default function PatientConsultationRoomPage({
       .then(async response => {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "We couldn't load this page.");
-        if (!controller.signal.aborted) { setConsultation(data.consultation); setSocketToken(data.socketToken); setMessages(data.consultation.messages || []); setLatestPrediction(data.latestPrediction); currentUserId.current = data.currentUserId; }
+        if (!controller.signal.aborted) { setConsultation(data.consultation); setSocketToken(data.socketToken); setMessages(data.consultation.messages || []); setLatestPrediction(data.latestPrediction); setCurrentUserId(data.currentUserId); }
       })
       .catch((error: unknown) => { if (!controller.signal.aborted) setError(error instanceof Error ? error.message : "We couldn't load this page."); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, [id]);
 
+  // The saved conversation remains usable even while the live service reconnects.
   useEffect(() => {
-    if (!socketToken || consultation?.status !== "ACTIVE") return;
-    const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3001", { auth: { token: socketToken } });
-    socketRef.current = socket;
-    socket.on("connect", () => { setConnected(true); setError(null); });
-    socket.on("disconnect", () => setConnected(false));
-    socket.on("connect_error", () => {
-      setConnected(false);
-      setError("Chat couldn't connect. Please refresh the page to reconnect.");
-    });
-    socket.on("receive_message", (msg: Message) => {
-      setMessages(prev => prev.some(m => m.id === msg.id) ? prev : [...prev, msg]);
-    });
-    return () => { socket.disconnect(); socketRef.current = null; };
-  }, [socketToken, consultation?.status]);
-
-  // Polling restores missed messages after reconnecting and updates waiting rooms.
-  useEffect(() => {
-    const interval = setInterval(async () => {
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const controller = new AbortController();
+    const refresh = async () => {
       try {
-        const res = await fetch(`/api/consultations/${id}`);
-        const data = await res.json();
-        if (res.ok) {
+        const response = await fetch(`/api/consultations/${id}`, { cache: "no-store", signal: controller.signal });
+        const data = await response.json();
+        if (!stopped && response.ok) {
           setConsultation(data.consultation);
-          setMessages(data.consultation.messages || []);
+          setLatestPrediction(data.latestPrediction);
+          setMessages(previous => mergeMessages(previous, data.consultation.messages || []));
           setSocketToken(previous => previous || data.socketToken);
         }
-      } catch { /* Keep the last known room visible during a brief outage. */ }
-    }, 5000);
-    return () => clearInterval(interval);
+      } catch { /* Keep the conversation visible during a brief network outage. */ }
+      finally { if (!stopped) timer = setTimeout(refresh, 3000); }
+    };
+    timer = setTimeout(refresh, 3000);
+    return () => { stopped = true; controller.abort(); clearTimeout(timer); };
   }, [id]);
 
-  // Scroll to bottom on new message
-  useEffect(() => {
-    messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  const handleSend = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputText.trim() || !connected || sending || consultation?.status !== "ACTIVE") return;
-    setSending(true);
+  const handleSend = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const content = inputText.trim();
+    if (!content || sending || consultation?.status !== "ACTIVE") return;
     setError(null);
-    socketRef.current?.timeout(10000).emit("send_message", {
-      consultationId: id, content: inputText.trim(),
-    }, (timeout: Error | null, result: { error?: string }) => {
-      setSending(false);
-      if (timeout || result?.error) setError(result?.error || "Your message wasn't confirmed. Check the conversation before trying again.");
-      else setInputText("");
-    });
+    try {
+      if (await sendMessage(content)) setInputText(previous => previous.trim() === content ? "" : previous);
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : "Your message could not be sent. Please try again.");
+    }
   };
   const generatePDF = () => { if (consultation) downloadPrescription(consultation); };
   const formatSymptom = (sym: string) => {
@@ -192,20 +176,20 @@ export default function PatientConsultationRoomPage({
               <h3 className="text-xs font-bold text-neutral-800 dark:text-neutral-200">
                 Dr. {consultation.doctor?.name || "Clinical Professional"}
               </h3>
-              <p className="text-[11px] text-neutral-400 dark:text-neutral-500 flex items-center gap-1">
+              <p className="text-[11px] text-neutral-600 dark:text-neutral-400 flex items-center gap-1">
                 <span className={`w-1.5 h-1.5 rounded-full ${isCompleted ? "bg-neutral-400" : "bg-emerald-500 animate-pulse"}`} />
-                {isCompleted ? "Session Completed" : "Session Active"}
+                {isCompleted ? "Session Completed" : (connected ? "Connected" : "Messages update automatically")}
               </p>
             </div>
           </div>
 
           <div className="px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">
-            Telehealth Live
+            Consultation
           </div>
         </header>
 
         {/* Message History */}
-        <div className="flex-1 p-6 overflow-y-auto space-y-4 max-h-[45vh] min-h-[35vh]">
+        <div ref={messagesRef} onScroll={onMessagesScroll} className="flex-1 p-6 overflow-y-auto overscroll-contain space-y-4 max-h-[45vh] min-h-[35vh]">
           {messages.length > 0 ? (
             messages.map((m) => {
               // Sender (Patient/Me) = Right side, Receiver (Doctor) = Left side
@@ -229,7 +213,7 @@ export default function PatientConsultationRoomPage({
                     <div
                       className={`rounded-2xl px-4 py-2.5 text-xs shadow-sm ${
                         isMe
-                          ? "bg-emerald-600 text-white rounded-tr-none"
+                          ? "bg-emerald-700 text-white rounded-tr-none"
                           : "bg-slate-100 dark:bg-neutral-800 text-slate-800 dark:text-neutral-100 border border-slate-200 dark:border-neutral-700 rounded-tl-none"
                       }`}
                     >
@@ -240,7 +224,7 @@ export default function PatientConsultationRoomPage({
                     </div>
                   </div>
                   {isMe && (
-                    <div className="w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center font-semibold text-xs shrink-0 shadow-sm mt-1">
+                    <div className="w-7 h-7 rounded-full bg-emerald-700 text-white flex items-center justify-center font-semibold text-xs shrink-0 shadow-sm mt-1">
                       Pt
                     </div>
                   )}
@@ -258,7 +242,6 @@ export default function PatientConsultationRoomPage({
               </p>
             </div>
           )}
-          <div ref={messageEndRef} />
         </div>
 
         {/* Prescription Notice / PDF Download Box */}
@@ -280,7 +263,7 @@ export default function PatientConsultationRoomPage({
             {consultation.prescription && (
               <button
                 onClick={generatePDF}
-                className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-md shadow-emerald-500/10 shrink-0"
+                className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-md shadow-emerald-500/10 shrink-0"
               >
                 <Download className="w-3.5 h-3.5" /> Download PDF Rx
               </button>
@@ -300,13 +283,14 @@ export default function PatientConsultationRoomPage({
               onChange={(e) => setInputText(e.target.value)}
               maxLength={4000}
               aria-label="Message to your doctor"
-              placeholder={connected ? "Type your message to the doctor..." : "Connecting to chat..."}
+              disabled={consultation.status !== "ACTIVE"}
+              placeholder={consultation.status === "WAITING" ? "Waiting for a doctor to join..." : "Type your message to the doctor..."}
               className="flex-1 px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 text-xs text-neutral-800"
             />
             <button
               type="submit"
-              disabled={!connected || sending || !inputText.trim()}
-              className="p-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 disabled:bg-neutral-100 disabled:text-neutral-400 text-white transition-all shadow-sm"
+              disabled={sending || !inputText.trim() || consultation.status !== "ACTIVE"}
+              className="p-2.5 rounded-xl bg-teal-700 hover:bg-teal-800 disabled:bg-neutral-100 disabled:text-neutral-500 dark:disabled:bg-neutral-800 dark:disabled:text-neutral-400 text-white transition-all shadow-sm"
               aria-label="Send message"
             >
               <Send className="w-4 h-4" />
@@ -332,7 +316,7 @@ export default function PatientConsultationRoomPage({
           <div className="space-y-4 flex-1">
             {/* Doctor Info */}
             <div className="space-y-2">
-              <span className="text-[11px] font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
+              <span className="text-[11px] font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-widest">
                 Doctor Profile
               </span>
               <div className="p-3.5 bg-neutral-50 dark:bg-neutral-950 border border-neutral-100 dark:border-neutral-800 rounded-2xl flex items-center gap-3">
@@ -352,7 +336,7 @@ export default function PatientConsultationRoomPage({
 
             {/* Diagnostic reference logs */}
             <div className="space-y-3">
-              <span className="text-[11px] font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest block">
+              <span className="text-[11px] font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-widest block">
                 Symptom Reference Logs
               </span>
 

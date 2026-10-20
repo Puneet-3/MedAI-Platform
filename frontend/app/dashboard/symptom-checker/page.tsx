@@ -196,7 +196,7 @@ export default function SymptomCheckerPage() {
                   >
                     <span className="text-xs truncate">{formatSymptom(sym)}</span>
                     {isSelected && (
-                      <div className="w-4 h-4 rounded-full bg-teal-600 text-white flex items-center justify-center">
+                      <div className="w-4 h-4 rounded-full bg-teal-700 text-white flex items-center justify-center">
                         <Check className="w-2.5 h-2.5" />
                       </div>
                     )}
@@ -217,7 +217,7 @@ export default function SymptomCheckerPage() {
             disabled={selectedSymptoms.length === 0 || loading}
             className={`w-full py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-md ${
               selectedSymptoms.length > 0 && !loading
-                ? "bg-teal-600 hover:bg-teal-700 text-white shadow-teal-600/15"
+                ? "bg-teal-700 hover:bg-teal-800 text-white shadow-teal-600/15"
                 : "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 cursor-not-allowed shadow-none"
             }`}
           >
@@ -340,7 +340,7 @@ export default function SymptomCheckerPage() {
               <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800 flex flex-col gap-3">
                 <Link
                   href="/dashboard/consultations"
-                  className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 transition-colors text-white text-xs font-bold flex items-center justify-center gap-1.5"
+                  className="w-full py-3 rounded-xl bg-emerald-700 hover:bg-emerald-800 transition-colors text-white text-xs font-bold flex items-center justify-center gap-1.5"
                 >
                   <UserPlus className="w-4 h-4" /> Consult a Doctor Now
                 </Link>

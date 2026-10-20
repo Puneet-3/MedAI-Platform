@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
+import { useChatScroll } from "@/hooks/use-chat-scroll";
 import {
   Bot,
   Send,
@@ -40,12 +41,8 @@ export default function ChatbotPage() {
   ]);
   const [inputText, setInputText] = useState("");
   const [loading, setLoading] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // Scroll to bottom whenever messages or loading state changes
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading]);
+  const lastMessage = messages.at(-1);
+  const { messagesRef, onMessagesScroll } = useChatScroll(lastMessage?.id, lastMessage?.sender === "user");
 
   const handleSend = async (textToSend: string) => {
     const trimmedText = textToSend.trim();
@@ -164,7 +161,7 @@ export default function ChatbotPage() {
         </div>
 
         {/* Message Log */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div ref={messagesRef} onScroll={onMessagesScroll} className="flex-1 overflow-y-auto overscroll-contain p-6 space-y-6">
           {messages.map((msg) => {
             if (msg.isSuggestion) {
               return (
@@ -216,7 +213,7 @@ export default function ChatbotPage() {
                     className={`p-4 rounded-2xl text-xs leading-relaxed shadow-sm border ${
                       isBot
                         ? "bg-neutral-50 dark:bg-neutral-950 border-neutral-100 dark:border-neutral-800 text-neutral-800 dark:text-neutral-200"
-                        : "bg-teal-600 border-teal-700 text-white"
+                        : "bg-teal-700 border-teal-800 text-white"
                     }`}
                   >
                     <p className="whitespace-pre-wrap">{msg.text}</p>
@@ -242,7 +239,6 @@ export default function ChatbotPage() {
               </div>
             </div>
           )}
-          <div ref={messagesEndRef} />
         </div>
 
         {/* Input & suggestions footer */}
@@ -289,7 +285,7 @@ export default function ChatbotPage() {
               disabled={loading || !inputText.trim()}
               className={`p-3 rounded-xl shadow-md flex items-center justify-center transition-all ${
                 inputText.trim() && !loading
-                  ? "bg-teal-600 hover:bg-teal-700 text-white shadow-teal-600/10 cursor-pointer"
+                  ? "bg-teal-700 hover:bg-teal-800 text-white shadow-teal-600/10 cursor-pointer"
                   : "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 shadow-none cursor-not-allowed"
               }`}
             >

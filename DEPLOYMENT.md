@@ -34,6 +34,8 @@ The root `render.yaml` defines `medai-consultation-chat`, a single free Node ser
 
 Set the values from `deploy/chat.env.example`. `SOCKET_SECRET` must match the website and `ALLOWED_ORIGINS` must contain the exact website origin. The server uses Render's `PORT` and listens on all interfaces. Check its `/health` endpoint. Keep one instance unless a shared Socket.IO adapter is added. Free instances can sleep, so the first connection may need a retry after waking.
 
+Consultation messages are saved through the authenticated website before live notification. Both participants can send and receive saved messages during a chat-host outage; the room refreshes every three seconds while the live connection recovers. Retrying a message uses the same message ID to prevent duplicates. Deploy the latest socket server too so saved-message notifications arrive immediately.
+
 ## 4. Deploy the website
 
 The existing local Vercel link is in `frontend/.vercel/project.json`. Use project root `frontend`, framework Next.js, Node 22, install `npm ci`, and build `npm run build`. Prisma Client is generated during installation for the cloud platform.

@@ -17,6 +17,8 @@
     "db:check": "node scripts/check-db.cjs",
     "deploy:check": "node scripts/check-deployment.cjs",
     "test:deployment": "node --experimental-strip-types --test scripts/test-deployment.mjs",
+    "test:chat": "node --experimental-strip-types --test scripts/test-chat.mjs",
+    "test:chat-workflow": "node scripts/test-chat-workflow.cjs",
     "smoke:workflows": "node scripts/smoke-workflows.cjs",
     "smoke:xray": "node scripts/smoke-workflows.cjs --xray ../fastapi/demo_xrays/normal.png --xray ../fastapi/demo_xrays/pneumonia.png"
   },

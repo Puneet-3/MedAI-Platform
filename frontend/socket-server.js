@@ -16,7 +16,7 @@ const server = createServer((req, res) => {
   res.end(JSON.stringify({ status: req.url === "/health" ? "ok" : "not found" }));
 });
 const io = new Server(server, {
-  cors: { origin: (process.env.ALLOWED_ORIGINS || "http://localhost:3000").split(",").map(v => v.trim()) },
+  cors: { origin: (process.env.ALLOWED_ORIGINS || "http://localhost:3000").split(",").map(value => value.trim().replace(/^["']|["']$/g, "").replace(/\/$/, "")) },
   maxHttpBufferSize: 16384,
 });
 
@@ -43,6 +43,23 @@ io.use(async (socket, next) => {
 io.on("connection", socket => {
   const { consultationId, userId } = socket.data;
   socket.join(consultationId);
+  socket.on("message_saved", async (data, acknowledge) => {
+    const reply = typeof acknowledge === "function" ? acknowledge : () => {};
+    try {
+      if (socket.data.exp <= Date.now() || typeof data?.messageId !== "string" || data.messageId.length > 64) return reply({ error: "Invalid message notification." });
+      const message = await prisma.message.findUnique({
+        where: { id: data.messageId },
+        include: { sender: { select: { id: true, name: true, role: true } }, consultation: { select: { status: true } } },
+      });
+      if (!message || message.consultationId !== consultationId || message.senderId !== userId || message.consultation.status !== "ACTIVE") return reply({ error: "Message notification is not permitted." });
+      const savedMessage = { id: message.id, consultationId, senderId: message.senderId, content: message.content, createdAt: message.createdAt, sender: message.sender };
+      io.to(consultationId).emit("receive_message", savedMessage);
+      reply({ success: true });
+    } catch {
+      reply({ error: "Live notification unavailable." });
+      console.error("Live message notification unavailable; the saved conversation remains available.");
+    }
+  });
   socket.on("send_message", async (data, acknowledge) => {
     const reply = typeof acknowledge === "function" ? acknowledge : () => {};
     try {

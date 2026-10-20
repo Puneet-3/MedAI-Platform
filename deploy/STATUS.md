@@ -16,6 +16,8 @@ The first prediction upload failed the package-size check. The subsequent produc
 
 ## Remaining work
 
+Follow-up diagnosis: Vercel runtime logs showed Supabase `EMAXCONNSESSION` errors (session pool limit 15). The website database setting was switched to the verified transaction pooler on port 6543; Prisma queries and interactive transactions passed. The next website deployment applies this setting. Chat now records safe rejection codes and reports its deployed Git revision through `/health`, so missing Render logs and stale deployments can be distinguished. No credentials or patient identifiers are logged.
+
 1. Keep the Supabase `medical-reports` bucket private and retain its server-only key in Vercel.
 2. Resolve the existing Render `medai-socket` service's connection rejection. Its public URL is https://medai-socket.onrender.com . Health and transport handshakes respond, but a valid website participant token is rejected. Review Render logs and its deployed source, database URL, shared secret, and allowed origins. The website secret matches ignored `deploy/.env.hosting`; Render settings could not be inspected from this session.
 3. Re-run `test:chat-workflow` with the production `SMOKE_URL` and Render `TEST_SOCKET_URL` after fixing Render. The six website checks passed; the additional instant-notification check has not passed against Render. Tests use synthetic accounts and messages and remove their records.

@@ -79,16 +79,23 @@ async function run() {
   pass("concurrent retries save once and cannot impersonate another sender");
   const reply = await post(doctor, path, { content: "Synthetic doctor reply", clientMessageId: randomUUID() });
   assert.equal(reply.message.senderId, users[1].id);
-  const history = await (await patient(`/api/consultations/${roomId}`)).json();
+  const historyResponse = await patient(`/api/consultations/${roomId}`);
+  const history = await historyResponse.json();
+  assert.equal(historyResponse.status, 200, history.error || "Conversation history could not be loaded");
   assert.equal(history.consultation.messages.length, 2);
   pass("both participants send and read saved messages without a socket connection");
 
   if (process.env.TEST_SOCKET_URL) {
     for (const client of [patient, doctor]) {
-      const details = await (await client(`/api/consultations/${roomId}`)).json();
+      const detailsResponse = await client(`/api/consultations/${roomId}`);
+      const details = await detailsResponse.json();
+      assert.equal(detailsResponse.status, 200, details.error || "Chat credentials could not be loaded");
       const socket = io(process.env.TEST_SOCKET_URL, { transports: ["websocket"], auth: { token: details.socketToken }, reconnection: false, timeout: 10000 });
       sockets.push(socket);
-      await new Promise((resolve, reject) => { socket.once("connect", resolve); socket.once("connect_error", reject); });
+      await new Promise((resolve, reject) => {
+        socket.once("connect", resolve);
+        socket.once("connect_error", error => reject(new Error(error.message + (error.data?.code ? ` [${error.data.code}]` : ""))));
+      });
     }
     const notification = new Promise((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error("Saved message was not broadcast")), 10000);

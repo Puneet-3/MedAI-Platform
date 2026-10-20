@@ -9,11 +9,12 @@ require("dotenv").config({ quiet: true });
 
 const secret = process.env.SOCKET_SECRET || process.env.AUTH_SECRET;
 if (!secret) throw new Error("Set SOCKET_SECRET or AUTH_SECRET before starting chat.");
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 3, connectionTimeoutMillis: 10000, idleTimeoutMillis: 10000 });
 const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
+const release = /^[0-9a-f]{7,40}$/i.test(process.env.RENDER_GIT_COMMIT || "") ? process.env.RENDER_GIT_COMMIT.slice(0,12) : "local";
 const server = createServer((req, res) => {
   res.writeHead(req.url === "/health" ? 200 : 404, { "Content-Type": "application/json" });
-  res.end(JSON.stringify({ status: req.url === "/health" ? "ok" : "not found" }));
+  res.end(JSON.stringify(req.url === "/health" ? { status: "ok", release } : { status: "not found" }));
 });
 const io = new Server(server, {
   cors: { origin: (process.env.ALLOWED_ORIGINS || "http://localhost:3000").split(",").map(value => value.trim().replace(/^["']|["']$/g, "").replace(/\/$/, "")) },
@@ -21,6 +22,7 @@ const io = new Server(server, {
 });
 
 io.use(async (socket, next) => {
+  let reason = "INVALID_TOKEN";
   try {
     const token = socket.handshake.auth?.token;
     if (typeof token !== "string" || token.length > 2048) throw new Error();
@@ -28,15 +30,29 @@ io.use(async (socket, next) => {
     if (!payload || !signature || extra) throw new Error();
     const expected = createHmac("sha256", secret).update(payload).digest();
     const received = Buffer.from(signature, "base64url");
+    reason = "SIGNATURE_MISMATCH";
     if (received.length !== expected.length || !timingSafeEqual(received, expected)) throw new Error();
+    reason = "INVALID_TOKEN";
     const claims = JSON.parse(Buffer.from(payload, "base64url").toString());
+    if (typeof claims.userId !== "string" || !claims.userId || typeof claims.consultationId !== "string" || !claims.consultationId) throw new Error();
+    reason = "SESSION_EXPIRED";
     if (!Number.isFinite(claims.exp) || claims.exp <= Date.now()) throw new Error();
+    reason = "DATABASE_UNAVAILABLE";
     const room = await prisma.consultation.findUnique({ where: { id: claims.consultationId } });
-    if (!room || room.status !== "ACTIVE" || ![room.patientId, room.doctorId].includes(claims.userId)) throw new Error();
+    reason = "ROOM_NOT_FOUND";
+    if (!room) throw new Error();
+    reason = "ROOM_NOT_ACTIVE";
+    if (room.status !== "ACTIVE") throw new Error();
+    reason = "NOT_A_PARTICIPANT";
+    if (![room.patientId, room.doctorId].includes(claims.userId)) throw new Error();
     socket.data = claims;
     next();
   } catch {
-    next(new Error("Unable to join this consultation. Refresh the page and try again."));
+    // Never log the token, claims, raw database error, or any patient identifiers.
+    console.warn("Consultation chat connection rejected:", reason);
+    const error = new Error("Unable to join this consultation. Refresh the page and try again.");
+    error.data = { code: reason };
+    next(error);
   }
 });
 
@@ -87,7 +103,7 @@ io.on("connection", socket => {
   });
 });
 
-server.listen(Number(process.env.PORT || process.env.SOCKET_PORT || 3001), "0.0.0.0", () => console.log("Consultation chat is ready."));
+server.listen(Number(process.env.PORT || process.env.SOCKET_PORT || 3001), "0.0.0.0", () => console.log("Consultation chat is ready. Release:", release));
 async function shutdown() {
   io.close();
   await prisma.$disconnect();

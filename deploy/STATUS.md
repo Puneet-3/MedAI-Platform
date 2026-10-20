@@ -1,6 +1,6 @@
 # MedAI deployment status
 
-Updated 21 October 2026. The website and prediction API have production deployments. Chat reliability and readability fixes are being verified for the next website release.
+Updated 21 October 2026. Website release `6026d4d` is live on the production domain. The production build and six live workflow checks passed: sign-in, message access controls, safe retries, participant message delivery, real symptom prediction, and completed-room restrictions. Light/dark text contrast and chat scrolling passed browser checks. Render instant-chat authentication remains unresolved; authenticated website messages continue to arrive through the three-second automatic refresh.
 
 ## Vercel
 
@@ -17,8 +17,8 @@ The first prediction upload failed the package-size check. The subsequent produc
 ## Remaining work
 
 1. Keep the Supabase `medical-reports` bucket private and retain its server-only key in Vercel.
-2. Keep the existing Render `medai-socket` service on the latest GitHub source. Its public URL is https://medai-socket.onrender.com . Its shared secret must match the website; allowed origins include the exact website domain.
-3. Verify the website release against real prediction and chat endpoints after publishing. Automated tests use only synthetic accounts and messages, then remove their records.
+2. Resolve the existing Render `medai-socket` service's connection rejection. Its public URL is https://medai-socket.onrender.com . Health and transport handshakes respond, but a valid website participant token is rejected. Review Render logs and its deployed source, database URL, shared secret, and allowed origins. The website secret matches ignored `deploy/.env.hosting`; Render settings could not be inspected from this session.
+3. Re-run `test:chat-workflow` with the production `SMOKE_URL` and Render `TEST_SOCKET_URL` after fixing Render. The six website checks passed; the additional instant-notification check has not passed against Render. Tests use synthetic accounts and messages and remove their records.
 4. Migrate existing locally stored report files, or re-upload them, before expecting those reports to open online.
 
 The dedicated chat secret is saved locally in ignored `deploy/.env.hosting`. Do not commit this file or paste its contents into chat. Original local development settings were not replaced.

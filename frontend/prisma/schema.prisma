@@ -39,6 +39,7 @@ model User {
   email          String       @unique
   name           String?
   role           Role         @default(USER)
+  doctorAccessRequested Boolean @default(false) @map("doctor_access_requested")
   passwordHash   String?      @map("password_hash")
   subscription   Subscription @default(FREE)
   medicalHistory Json?        @map("medical_history") // JSONB for medical logs/files

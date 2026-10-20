@@ -1,0 +1,31 @@
+{
+  "name": "PneumoniaMNIST-224",
+  "source": "https://github.com/MedMNIST/MedMNIST/blob/main/medmnist/info.py",
+  "download_url": "https://zenodo.org/records/10519652/files/pneumoniamnist_224.npz?download=1",
+  "license": "CC BY 4.0",
+  "md5": "d6a3c71de1b945ea11211b03746c1fe1",
+  "sha256": "2a6faaca43872b4bcf4154a79625631ab29683b41e265ab7936d0513351fe591",
+  "class_names": [
+    "NORMAL",
+    "PNEUMONIA"
+  ],
+  "splits": {
+    "train": {
+      "total": 4708,
+      "normal": 1214,
+      "pneumonia": 3494
+    },
+    "val": {
+      "total": 524,
+      "normal": 135,
+      "pneumonia": 389
+    },
+    "test": {
+      "total": 624,
+      "normal": 234,
+      "pneumonia": 390
+    }
+  },
+  "population": "Pediatric chest radiographs; research and educational use, not clinical validation.",
+  "split_policy": "Publisher-provided train, validation, and test partitions are preserved."
+}

@@ -1,3 +1,4 @@
+import { createSocketToken } from "@/lib/socket-token";
 import { db } from "@/lib/db";
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
@@ -75,8 +76,9 @@ export async function GET(
       consultation,
       latestPrediction,
       currentUserId: userId,
+      socketToken: consultation.status === "ACTIVE" && (isPatient || isDoctor) ? createSocketToken(userId, id) : null,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Fetch consultation details error:", error);
     return NextResponse.json(
       { error: "Failed to load room details." },

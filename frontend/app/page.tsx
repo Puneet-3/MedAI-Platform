@@ -1,470 +1,81 @@
 import { auth } from "@/auth";
+import { REPORT_MAX_MB } from "@/lib/report-limits";
 import Link from "next/link";
-import { 
-  Activity, 
-  Bot, 
-  FileText, 
-  Video, 
-  MapPin, 
-  BrainCircuit, 
-  CheckCircle2, 
-  UserCheck, 
-  ChevronRight,
-  Lock,
-  Building2,
-  ShieldCheck,
-  Zap,
-  ArrowRight
-} from "lucide-react";
+import Image from "next/image";
+import { Activity, ArrowDown, ArrowRight, Bot, FileText, HeartHandshake, MapPin, MessageCircle, Plus, Stethoscope } from "lucide-react";
+
+const services = [
+  { title: "Make sense of your symptoms", description: "Choose what you are feeling and explore possible matches. Bring your results to a doctor for a proper assessment.", href: "/dashboard/symptom-checker", action: "Check symptoms", icon: Activity, number: "01" },
+  { title: "A place for your questions", description: "Ask the health assistant a general question. It uses a set of prepared responses and will tell you when it cannot help.", href: "/dashboard/chatbot", action: "Ask a question", icon: Bot, number: "02" },
+  { title: "Keep your reports together", description: "Upload a report, find it again when you need it, and read the notes a doctor leaves after reviewing it.", href: "/dashboard/reports", action: "View reports", icon: FileText, number: "03" },
+  { title: "Talk it through with a doctor", description: "Join the waiting room for a text consultation. Your conversation and the doctor's treatment notes stay together.", href: "/dashboard/consultations", action: "Request a consultation", icon: MessageCircle, number: "04" },
+  { title: "Find care close to you", description: "Look for hospitals, clinics, and pharmacies around your location, with directions to help you get there.", href: "/dashboard/nearby", action: "Find nearby care", icon: MapPin, number: "05" },
+  { title: "Pick up where you left off", description: "Look back at earlier symptom checks and consultation notes without having to remember every detail.", href: "/dashboard/history", action: "See your history", icon: HeartHandshake, number: "06" },
+];
+const questions = [
+  ["Can MedAI give me a diagnosis?", "No. The symptom checker is an experimental machine learning tool. Its scores describe model matches, not your chance of having an illness. A qualified doctor needs to assess your symptoms and medical history."],
+  ["What happens when I request a consultation?", "Your request enters a waiting room. When a doctor accepts it, you can chat by text. The doctor can add treatment notes, which you can download afterwards. Response time depends on whether a doctor is available."],
+  ["Can I upload any medical report?", `You can save JPG, PNG, and PDF reports up to ${REPORT_MAX_MB} MB. Chest X-ray screening accepts JPG and PNG only and is available when a trained model is installed. Reports can still be reviewed by a doctor when screening is unavailable.`],
+  ["Who is this project for?", "MedAI is a healthcare software project for learning and demonstration. It has patient, doctor, and administrator workspaces. It has not been clinically validated and is not an emergency service."],
+];
 
 export default async function Home() {
   const session = await auth();
-  const isLoggedIn = !!session?.user;
-  const userName = session?.user?.name || "User";
-
+  const workspace = session?.user?.role === "DOCTOR" ? "/doctor/dashboard" : session?.user?.role === "ADMIN" ? "/admin" : "/dashboard";
   return (
-    <div className="min-h-screen bg-[#858476] p-3 sm:p-6 md:p-10 lg:p-12 font-sans transition-all duration-300">
-      {/* Central Floating Editorial Canvas */}
-      <main className="bg-white rounded-[28px] sm:rounded-[36px] shadow-2xl w-full max-w-[1280px] mx-auto flex flex-col justify-between p-6 sm:p-10 md:p-14 overflow-hidden space-y-20">
-        
-        {/* Header Navigation Section */}
-        <header className="flex flex-col sm:flex-row items-center justify-between gap-6 pb-2">
-          {/* Site Title / Logo */}
-          <Link href="/" className="inline-block group">
-            <span className="font-serif text-2xl sm:text-[28px] font-normal text-neutral-900 tracking-tight group-hover:opacity-75 transition-opacity">
-              MedAI
-            </span>
-          </Link>
-
-          {/* Navigation Links & Action */}
-          <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-10">
-            <nav className="flex items-center gap-6 sm:gap-8 text-xs sm:text-sm font-normal text-neutral-800">
-              <Link href="/dashboard" className="hover:text-black transition-colors">
-                About
-              </Link>
-              <Link href="/dashboard/nearby" className="hover:text-black transition-colors">
-                Contact
-              </Link>
-              <Link href="/dashboard/symptom-checker" className="hover:text-black transition-colors">
-                Services
-              </Link>
-              <Link href="/dashboard/consultations" className="hover:text-black transition-colors">
-                Appointments
-              </Link>
-            </nav>
-
-            {/* Book Now Button */}
-            <div>
-              {isLoggedIn ? (
-                <Link
-                  href="/dashboard"
-                  className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-black hover:bg-neutral-800 text-white text-xs font-medium tracking-wide transition-all shadow-sm"
-                >
-                  Dashboard
-                </Link>
-              ) : (
-                <Link
-                  href="/dashboard/symptom-checker"
-                  className="inline-flex items-center justify-center px-7 py-2.5 rounded-full bg-black hover:bg-neutral-800 text-white text-xs font-medium tracking-wide transition-all shadow-sm"
-                >
-                  Book now
-                </Link>
-              )}
+    <div className="landing min-h-screen bg-[#f5f3ed] text-[#233c36]">
+      <a href="#main-content" className="skip-link">Skip to content</a>
+      <header className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-5 px-6 py-6 md:px-12">
+        <Link href="/" className="flex items-center gap-2.5" aria-label="MedAI home">
+          <Image src="/logo.png" alt="" width={34} height={34} className="size-[34px] shrink-0 object-contain" />
+          <span className="font-serif text-3xl tracking-tight">MedAI<span className="text-[#71866a]">.</span></span>
+        </Link>
+        <nav aria-label="Main navigation" className="flex items-center gap-5 text-sm md:gap-8">
+          <a href="#care" className="hidden hover:underline sm:block">Ways we can help</a>
+          <a href="#how-it-works" className="hidden hover:underline md:block">How it works</a>
+          <Link href={session ? workspace : "/login"} className="hover:underline">{session ? "Your workspace" : "Sign in"}</Link>
+          <Link href={session ? workspace : "/register"} className="rounded-full bg-[#294e42] px-5 py-3 text-white transition hover:bg-[#1d3c32]">{session ? "Open dashboard" : "Get started"} <ArrowRight className="ml-1 inline size-4" /></Link>
+        </nav>
+      </header>
+      <main id="main-content">
+        <section className="mx-auto grid max-w-7xl items-center gap-10 px-6 pb-16 pt-10 md:px-12 md:pb-24 lg:grid-cols-2 lg:gap-16 lg:pt-16">
+          <div className="max-w-xl">
+            <p className="mb-6 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#61725b]"><span className="size-2 rounded-full bg-[#71866a]" /> A little clarity. A little care.</p>
+            <h1 className="font-serif text-5xl leading-[1.07] tracking-tight sm:text-6xl xl:text-[78px]">Your health deserves<br /><em className="font-normal text-[#71866a]">a conversation.</em></h1>
+            <p className="mt-7 max-w-md text-base leading-relaxed text-[#63716a] md:text-lg">Some days, you just need to know where to start. Understand your symptoms, keep your reports close, and take the next step with a doctor.</p>
+            <div className="mt-8 flex flex-wrap items-center gap-5">
+              <Link href="/dashboard/symptom-checker" className="inline-flex items-center gap-3 rounded-full bg-[#294e42] px-6 py-3.5 text-sm font-medium text-white transition hover:bg-[#1d3c32]">Start with your symptoms <ArrowRight className="size-4" /></Link>
+              <a href="#how-it-works" className="inline-flex items-center gap-2 text-sm underline decoration-[#a5b09b] underline-offset-4">Take a look around <ArrowDown className="size-4" /></a>
             </div>
+            <p className="mt-6 text-xs leading-relaxed text-[#738075]">A starting point for better questions. Every medical decision belongs with you and your doctor.</p>
           </div>
-        </header>
-
-        {/* 1. Hero Section (Matching Exact Template) */}
-        <section className="pt-4 pb-2 space-y-10">
-          {/* Giant Full-Width Editorial Headline */}
-          <h1 className="font-serif text-5xl sm:text-6xl md:text-7xl lg:text-[84px] xl:text-[94px] font-normal tracking-tight text-neutral-900 leading-[1.04]">
-            The Science of Living Well
-          </h1>
-
-          {/* 2-Column Split below headline */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-end pt-2">
-            
-            {/* Left Column: Lowered Descriptor Text & Black Oval Discover Button */}
-            <div className="lg:col-span-6 flex flex-col justify-end pb-4 space-y-6">
-              <p className="text-base sm:text-lg text-neutral-800 font-normal leading-relaxed max-w-sm">
-                Intuitive clinical intelligence and personalized health guidance, crafted for a calmer, healthier life.
-              </p>
-
-              <div>
-                <Link
-                  href="/dashboard/symptom-checker"
-                  className="inline-flex items-center justify-center px-10 py-3.5 rounded-full bg-black hover:bg-neutral-800 text-white text-xs font-medium tracking-wider transition-all shadow-sm"
-                >
-                  Discover
-                </Link>
-              </div>
+          <div className="relative pb-8 pl-3 sm:pl-8">
+            <div className="absolute inset-x-0 bottom-0 top-8 rounded-[2rem] bg-[#dce2d4]" />
+            <div className="relative aspect-[5/5] overflow-hidden rounded-[2rem] sm:aspect-[6/5] lg:aspect-[5/5]">
+              <Image src="/doctor_hero.jpg" alt="A healthcare professional ready for a conversation" fill priority sizes="(max-width: 1024px) 90vw, 540px" className="object-cover" />
             </div>
-
-            {/* Right Column: Clean Vertical Wellbeing Lifestyle Photograph */}
-            <div className="lg:col-span-6 relative">
-              <div className="relative rounded-2xl overflow-hidden shadow-sm aspect-[3/4] w-full max-w-md ml-auto bg-neutral-100">
-                <img
-                  src="/wellbeing_hero.jpg"
-                  alt="Holistic Wellbeing and Mindful Health"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            </div>
-
-          </div>
-        </section>
-
-        {/* 2. Curated Services & Clinical Capabilities */}
-        <section className="space-y-12 pt-8 border-t border-neutral-100">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-            <div className="space-y-2">
-              <span className="text-xs font-medium uppercase tracking-widest text-neutral-500">
-                Personalized Care
-              </span>
-              <h2 className="font-serif text-3xl sm:text-4xl text-neutral-900 tracking-tight font-normal">
-                Curated Clinical Capabilities
-              </h2>
-            </div>
-            <p className="text-xs sm:text-sm text-neutral-600 max-w-md leading-relaxed">
-              Designed for individuals seeking serene, instant health triage and medical professionals requiring streamlined care tools.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Service 1 */}
-            <div className="bg-neutral-50/70 border border-neutral-200/60 rounded-2xl p-7 hover:bg-white hover:border-neutral-300 hover:shadow-md transition-all flex flex-col justify-between group">
-              <div>
-                <div className="w-10 h-10 rounded-xl bg-pink-100/70 text-[#E86591] flex items-center justify-center mb-5 group-hover:scale-105 transition-transform">
-                  <Activity className="w-5 h-5" />
-                </div>
-                <h3 className="font-serif text-xl font-normal text-neutral-900 mb-2">
-                  Symptom Triage Analysis
-                </h3>
-                <p className="text-xs text-neutral-600 leading-relaxed mb-4">
-                  Select parameters across 132 physical symptoms. Our medical diagnostic model calculates differential likelihoods and specialist triage recommendations.
-                </p>
-              </div>
-              <Link href="/dashboard/symptom-checker" className="inline-flex items-center gap-1.5 text-xs font-semibold text-neutral-900 hover:text-[#E86591] transition-colors">
-                <span>Run Analysis</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-
-            {/* Service 2 */}
-            <div className="bg-neutral-50/70 border border-neutral-200/60 rounded-2xl p-7 hover:bg-white hover:border-neutral-300 hover:shadow-md transition-all flex flex-col justify-between group">
-              <div>
-                <div className="w-10 h-10 rounded-xl bg-sky-100/70 text-[#0284C7] flex items-center justify-center mb-5 group-hover:scale-105 transition-transform">
-                  <Bot className="w-5 h-5" />
-                </div>
-                <h3 className="font-serif text-xl font-normal text-neutral-900 mb-2">
-                  24/7 Wellness Assistant
-                </h3>
-                <p className="text-xs text-neutral-600 leading-relaxed mb-4">
-                  Trained on clinical consultation intents to answer health questions, explain drug interactions, and clarify symptoms with calm clarity.
-                </p>
-              </div>
-              <Link href="/dashboard/chatbot" className="inline-flex items-center gap-1.5 text-xs font-semibold text-neutral-900 hover:text-[#0284C7] transition-colors">
-                <span>Start Dialogue</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-
-            {/* Service 3 */}
-            <div className="bg-neutral-50/70 border border-neutral-200/60 rounded-2xl p-7 hover:bg-white hover:border-neutral-300 hover:shadow-md transition-all flex flex-col justify-between group">
-              <div>
-                <div className="w-10 h-10 rounded-xl bg-pink-100/70 text-[#E86591] flex items-center justify-center mb-5 group-hover:scale-105 transition-transform">
-                  <BrainCircuit className="w-5 h-5" />
-                </div>
-                <h3 className="font-serif text-xl font-normal text-neutral-900 mb-2">
-                  Chest X-Ray Pre-Screening
-                </h3>
-                <p className="text-xs text-neutral-600 leading-relaxed mb-4">
-                  Upload pulmonary radiographs for deep neural analysis to pre-screen for pneumonia patterns and clinical indicators for doctor review.
-                </p>
-              </div>
-              <Link href="/dashboard/reports" className="inline-flex items-center gap-1.5 text-xs font-semibold text-neutral-900 hover:text-[#E86591] transition-colors">
-                <span>Upload Scan</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-
-            {/* Service 4 */}
-            <div className="bg-neutral-50/70 border border-neutral-200/60 rounded-2xl p-7 hover:bg-white hover:border-neutral-300 hover:shadow-md transition-all flex flex-col justify-between group">
-              <div>
-                <div className="w-10 h-10 rounded-xl bg-sky-100/70 text-[#0284C7] flex items-center justify-center mb-5 group-hover:scale-105 transition-transform">
-                  <Video className="w-5 h-5" />
-                </div>
-                <h3 className="font-serif text-xl font-normal text-neutral-900 mb-2">
-                  Physician Consultations
-                </h3>
-                <p className="text-xs text-neutral-600 leading-relaxed mb-4">
-                  Connect directly with licensed physicians via private consultation rooms, virtual waiting queues, and encrypted real-time chat.
-                </p>
-              </div>
-              <Link href="/dashboard/consultations" className="inline-flex items-center gap-1.5 text-xs font-semibold text-neutral-900 hover:text-[#0284C7] transition-colors">
-                <span>Enter Room</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-
-            {/* Service 5 */}
-            <div className="bg-neutral-50/70 border border-neutral-200/60 rounded-2xl p-7 hover:bg-white hover:border-neutral-300 hover:shadow-md transition-all flex flex-col justify-between group">
-              <div>
-                <div className="w-10 h-10 rounded-xl bg-pink-100/70 text-[#E86591] flex items-center justify-center mb-5 group-hover:scale-105 transition-transform">
-                  <MapPin className="w-5 h-5" />
-                </div>
-                <h3 className="font-serif text-xl font-normal text-neutral-900 mb-2">
-                  Nearby Care Finder
-                </h3>
-                <p className="text-xs text-neutral-600 leading-relaxed mb-4">
-                  Locate nearby specialized clinics, hospitals, and licensed dispensaries in real time utilizing browser geolocation.
-                </p>
-              </div>
-              <Link href="/dashboard/nearby" className="inline-flex items-center gap-1.5 text-xs font-semibold text-neutral-900 hover:text-[#E86591] transition-colors">
-                <span>Locate Clinics</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-
-            {/* Service 6 */}
-            <div className="bg-neutral-50/70 border border-neutral-200/60 rounded-2xl p-7 hover:bg-white hover:border-neutral-300 hover:shadow-md transition-all flex flex-col justify-between group">
-              <div>
-                <div className="w-10 h-10 rounded-xl bg-sky-100/70 text-[#0284C7] flex items-center justify-center mb-5 group-hover:scale-105 transition-transform">
-                  <FileText className="w-5 h-5" />
-                </div>
-                <h3 className="font-serif text-xl font-normal text-neutral-900 mb-2">
-                  Digital Prescriptions & Records
-                </h3>
-                <p className="text-xs text-neutral-600 leading-relaxed mb-4">
-                  Receive official PDF medical prescriptions generated during physician consultations and access encrypted report archives.
-                </p>
-              </div>
-              <Link href="/dashboard/history" className="inline-flex items-center gap-1.5 text-xs font-semibold text-neutral-900 hover:text-[#0284C7] transition-colors">
-                <span>View Records</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </Link>
+            <div className="absolute bottom-2 left-0 flex max-w-[85%] items-center gap-4 rounded-2xl border border-[#e6e7dc] bg-[#fffefa] px-5 py-4 shadow-sm">
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[#edf1e7]"><HeartHandshake className="size-5 text-[#577248]" /></span>
+              <div><p className="font-serif text-xl">A person behind every question.</p><p className="mt-1 text-xs text-[#738075]">Technology helps. Human judgment matters.</p></div>
             </div>
           </div>
         </section>
-
-        {/* 3. The 4-Step Patient Pathway */}
-        <section className="bg-neutral-50 border border-neutral-200/70 rounded-3xl p-8 sm:p-12 space-y-10">
-          <div className="text-center space-y-3 max-w-2xl mx-auto">
-            <span className="text-xs font-medium uppercase tracking-widest text-neutral-500">
-              Workflow
-            </span>
-            <h2 className="font-serif text-3xl sm:text-4xl font-normal text-neutral-900 tracking-tight">
-              A Seamless Journey to Verified Care
-            </h2>
-            <p className="text-xs sm:text-sm text-neutral-600">
-              Four gentle steps connecting initial symptom expression with licensed physician treatment.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-white rounded-2xl p-6 border border-neutral-200/60 shadow-sm flex flex-col justify-between">
-              <div>
-                <span className="font-serif text-2xl font-normal text-neutral-900 mb-3 block">01</span>
-                <h4 className="text-sm font-semibold text-neutral-900 mb-1">Check Symptoms</h4>
-                <p className="text-xs text-neutral-600 leading-relaxed">
-                  Select your current physical symptoms or upload chest scans.
-                </p>
-              </div>
-              <span className="text-[11px] text-neutral-400 mt-4 pt-4 border-t border-neutral-100">132 conditions mapped</span>
-            </div>
-
-            <div className="bg-white rounded-2xl p-6 border border-neutral-200/60 shadow-sm flex flex-col justify-between">
-              <div>
-                <span className="font-serif text-2xl font-normal text-neutral-900 mb-3 block">02</span>
-                <h4 className="text-sm font-semibold text-neutral-900 mb-1">Receive Triage Score</h4>
-                <p className="text-xs text-neutral-600 leading-relaxed">
-                  View differential condition likelihoods and recommended labs.
-                </p>
-              </div>
-              <span className="text-[11px] text-neutral-400 mt-4 pt-4 border-t border-neutral-100">Sub-second analysis</span>
-            </div>
-
-            <div className="bg-white rounded-2xl p-6 border border-neutral-200/60 shadow-sm flex flex-col justify-between">
-              <div>
-                <span className="font-serif text-2xl font-normal text-neutral-900 mb-3 block">03</span>
-                <h4 className="text-sm font-semibold text-neutral-900 mb-1">Doctor Consultation</h4>
-                <p className="text-xs text-neutral-600 leading-relaxed">
-                  Enter the virtual room for physician assessment.
-                </p>
-              </div>
-              <span className="text-[11px] text-neutral-400 mt-4 pt-4 border-t border-neutral-100">Board-certified review</span>
-            </div>
-
-            <div className="bg-white rounded-2xl p-6 border border-neutral-200/60 shadow-sm flex flex-col justify-between">
-              <div>
-                <span className="font-serif text-2xl font-normal text-neutral-900 mb-3 block">04</span>
-                <h4 className="text-sm font-semibold text-neutral-900 mb-1">Digital Prescription</h4>
-                <p className="text-xs text-neutral-600 leading-relaxed">
-                  Receive signed medical PDF prescriptions and pharmacy routes.
-                </p>
-              </div>
-              <span className="text-[11px] text-neutral-400 mt-4 pt-4 border-t border-neutral-100">Instant PDF download</span>
+        <section id="care" className="border-y border-[#e3e4d9] bg-[#fffefa]">
+          <div className="mx-auto max-w-7xl px-6 py-16 md:px-12 md:py-20">
+            <div className="mb-10 flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="eyebrow">A few ways to feel more prepared</p><h2 className="mt-3 font-serif text-4xl tracking-tight md:text-5xl">Small steps. A clearer picture.</h2></div><p className="max-w-xs text-sm leading-relaxed text-[#738075]">From the first question to a follow-up conversation, keep the details in one place.</p></div>
+            <div className="grid gap-px overflow-hidden rounded-2xl border border-[#e3e4d9] bg-[#e3e4d9] sm:grid-cols-2 lg:grid-cols-3">
+              {services.map(({ title, description, href, action, icon: Icon, number }) => <article key={number} className="group flex flex-col bg-[#fffefa] p-7 transition hover:bg-[#f5f6ef] md:p-8"><div className="mb-7 flex items-center justify-between"><Icon className="size-6 stroke-[1.5] text-[#617d54]" /><span className="font-mono text-xs text-[#9ba593]">{number}</span></div><h3 className="font-serif text-2xl leading-tight">{title}</h3><p className="mb-6 mt-3 flex-1 text-sm leading-relaxed text-[#738075]">{description}</p><Link href={href} className="inline-flex items-center gap-2 text-sm font-medium underline decoration-[#d3dbc9] underline-offset-4">{action}<ArrowRight className="size-4 transition group-hover:translate-x-1" /></Link></article>)}
             </div>
           </div>
         </section>
-
-        {/* 4. Dual Portals: Patients & Physicians */}
-        <section className="space-y-10">
-          <div className="text-center space-y-3 max-w-2xl mx-auto">
-            <span className="text-xs font-medium uppercase tracking-widest text-neutral-500">
-              Workspaces
-            </span>
-            <h2 className="font-serif text-3xl sm:text-4xl font-normal text-neutral-900 tracking-tight">
-              Dedicated Portals for Both Sides of Care
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Patient Portal Card */}
-            <div className="bg-neutral-900 text-white rounded-3xl p-8 sm:p-10 space-y-6 flex flex-col justify-between shadow-xl">
-              <div className="space-y-4">
-                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-white text-xs font-medium">
-                  <UserCheck className="w-3.5 h-3.5 text-pink-300" />
-                  <span>For Patients</span>
-                </span>
-                <h3 className="font-serif text-3xl font-normal text-white">
-                  Empowered Personal Health Management
-                </h3>
-                <p className="text-xs sm:text-sm text-neutral-300 leading-relaxed">
-                  Gain immediate clarity on symptoms, consult with an empathetic doctor, and secure verified prescriptions without sitting in crowded clinics.
-                </p>
-                <ul className="space-y-2.5 pt-2 text-xs text-neutral-300">
-                  <li className="flex items-center gap-2.5">
-                    <CheckCircle2 className="w-4 h-4 text-pink-300 flex-shrink-0" />
-                    <span>Instant symptom analysis with top-3 disease likelihood</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <CheckCircle2 className="w-4 h-4 text-pink-300 flex-shrink-0" />
-                    <span>24/7 Virtual health dialogue for medication & lifestyle guidance</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <CheckCircle2 className="w-4 h-4 text-pink-300 flex-shrink-0" />
-                    <span>One-click doctor consultation & downloadable prescriptions</span>
-                  </li>
-                </ul>
-              </div>
-              <div className="pt-4 border-t border-neutral-800">
-                <Link
-                  href="/dashboard/symptom-checker"
-                  className="inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-white text-black text-xs font-semibold tracking-wider hover:bg-neutral-200 transition-all"
-                >
-                  Start Self-Check
-                </Link>
-              </div>
-            </div>
-
-            {/* Doctor Portal Card */}
-            <div className="bg-[#173364] text-white rounded-3xl p-8 sm:p-10 space-y-6 flex flex-col justify-between shadow-xl">
-              <div className="space-y-4">
-                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-sky-200 text-xs font-medium">
-                  <Activity className="w-3.5 h-3.5 text-sky-300" />
-                  <span>For Clinicians</span>
-                </span>
-                <h3 className="font-serif text-3xl font-normal text-white">
-                  A High-Efficiency Clinical Workstation
-                </h3>
-                <p className="text-xs sm:text-sm text-sky-100/80 leading-relaxed">
-                  Review pre-screened waiting queues, evaluate automated radiographic indicators, conduct live consultations, and issue verifiable digital prescriptions.
-                </p>
-                <ul className="space-y-2.5 pt-2 text-xs text-sky-100/90">
-                  <li className="flex items-center gap-2.5">
-                    <CheckCircle2 className="w-4 h-4 text-sky-300 flex-shrink-0" />
-                    <span>Live patient queue prioritized by symptom urgency score</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <CheckCircle2 className="w-4 h-4 text-sky-300 flex-shrink-0" />
-                    <span>Deep learning pre-screening assistant for pulmonary radiographs</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <CheckCircle2 className="w-4 h-4 text-sky-300 flex-shrink-0" />
-                    <span>Integrated digital prescription generator with tamper audit log</span>
-                  </li>
-                </ul>
-              </div>
-              <div className="pt-4 border-t border-[#234685]">
-                <Link
-                  href="/doctor/dashboard"
-                  className="inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-white text-[#173364] text-xs font-semibold tracking-wider hover:bg-sky-50 transition-all"
-                >
-                  Open Workstation
-                </Link>
-              </div>
-            </div>
-          </div>
+        <section id="how-it-works" className="mx-auto max-w-7xl px-6 py-16 md:px-12 md:py-20">
+          <p className="eyebrow">At your own pace</p><h2 className="mt-3 font-serif text-4xl tracking-tight md:text-5xl">You do not need all the answers.</h2>
+          <div className="mt-10 grid gap-8 md:grid-cols-3">{[["01", "Start with what you know", "Create your account and choose the symptoms that describe how you feel."], ["02", "Keep the details together", "Save a symptom check or upload a report so you have something to refer back to."], ["03", "Bring a doctor into the conversation", "Request a text consultation, ask your questions, and keep the doctor's notes."]].map(([n, title, description]) => <div key={n} className="border-t border-[#cfd5c7] pt-5"><span className="text-xs text-[#71866a]">{n}</span><h3 className="mt-4 font-serif text-2xl">{title}</h3><p className="mt-3 text-sm leading-relaxed text-[#738075]">{description}</p></div>)}</div>
         </section>
-
-        {/* 5. Frequently Asked Questions */}
-        <section className="space-y-8 max-w-4xl mx-auto w-full pt-4">
-          <div className="text-center space-y-2">
-            <span className="text-xs font-medium uppercase tracking-widest text-neutral-500">
-              FAQ
-            </span>
-            <h2 className="font-serif text-3xl sm:text-4xl font-normal text-neutral-900 tracking-tight">
-              Frequently Asked Questions
-            </h2>
-          </div>
-
-          <div className="space-y-3">
-            <details className="group bg-neutral-50 border border-neutral-200/70 rounded-2xl p-5 [&_summary::-webkit-details-marker]:hidden cursor-pointer transition-all">
-              <summary className="flex items-center justify-between font-medium text-sm text-neutral-900">
-                <span>Is MedAI a replacement for an in-person physical doctor?</span>
-                <span className="ml-2 text-neutral-500 group-open:rotate-180 transition-transform">▼</span>
-              </summary>
-              <p className="mt-3 text-xs text-neutral-600 leading-relaxed border-t border-neutral-200/60 pt-3">
-                No. MedAI provides preliminary machine learning risk analysis and Virtual AI assistant guidance to assist triage. It is designed to connect you with certified medical professionals who perform final evaluations.
-              </p>
-            </details>
-
-            <details className="group bg-neutral-50 border border-neutral-200/70 rounded-2xl p-5 [&_summary::-webkit-details-marker]:hidden cursor-pointer transition-all">
-              <summary className="flex items-center justify-between font-medium text-sm text-neutral-900">
-                <span>How accurate are the symptom triage and radiography models?</span>
-                <span className="ml-2 text-neutral-500 group-open:rotate-180 transition-transform">▼</span>
-              </summary>
-              <p className="mt-3 text-xs text-neutral-600 leading-relaxed border-t border-neutral-200/60 pt-3">
-                Our Random Forest symptom classifier covers 132 symptoms, and our CNN model is trained specifically for pulmonary X-ray analysis. If confidence scores fall below thresholds (e.g. 60%), MedAI explicitly recommends laboratory blood work or doctor evaluation.
-              </p>
-            </details>
-
-            <details className="group bg-neutral-50 border border-neutral-200/70 rounded-2xl p-5 [&_summary::-webkit-details-marker]:hidden cursor-pointer transition-all">
-              <summary className="flex items-center justify-between font-medium text-sm text-neutral-900">
-                <span>How do live consultations with doctors work?</span>
-                <span className="ml-2 text-neutral-500 group-open:rotate-180 transition-transform">▼</span>
-              </summary>
-              <p className="mt-3 text-xs text-neutral-600 leading-relaxed border-t border-neutral-200/60 pt-3">
-                When you initiate a consultation, your profile and symptom results are queued in the doctor workstation. Once a physician accepts your request, a real-time session opens where you can discuss symptoms and receive a digital prescription.
-              </p>
-            </details>
-          </div>
-        </section>
-
-        {/* 6. Editorial Footer */}
-        <footer className="pt-8 border-t border-neutral-100 text-xs text-neutral-500 space-y-6">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <Link href="/" className="inline-block group">
-              <span className="font-serif text-xl font-normal text-neutral-900 tracking-tight group-hover:opacity-75 transition-opacity">
-                MedAI
-              </span>
-            </Link>
-            <div className="flex items-center gap-6 text-neutral-600">
-              <Link href="/dashboard/symptom-checker" className="hover:text-black transition-colors">Symptom Checker</Link>
-              <Link href="/dashboard/chatbot" className="hover:text-black transition-colors">AI Assistant</Link>
-              <Link href="/doctor/dashboard" className="hover:text-black transition-colors">Clinicians</Link>
-              <Link href="/login" className="hover:text-black transition-colors">Sign In</Link>
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-4 border-t border-neutral-100 text-[11px] text-neutral-400">
-            <p>© {new Date().getFullYear()} MedAI Health Technologies. All rights reserved.</p>
-            <p>The Science of Living Well.</p>
-          </div>
-        </footer>
-
+        <section className="mx-auto max-w-7xl px-6 pb-16 md:px-12"><div className="grid gap-6 rounded-3xl bg-[#294e42] p-8 text-[#fffefa] md:grid-cols-[1fr_auto] md:items-center md:p-12"><div><div className="mb-4 flex items-center gap-2 text-xs uppercase tracking-widest text-[#c4d3ba]"><Stethoscope className="size-4" /> For doctors</div><h2 className="font-serif text-3xl md:text-4xl">More context for the conversation.</h2><p className="mt-3 max-w-xl text-sm leading-relaxed text-[#d3dfd2]">A shared waiting room, patient symptom history, report reviews, and consultation notes. Doctor access is managed by a project administrator.</p></div><Link href="/doctor/dashboard" className="inline-flex w-fit items-center gap-3 rounded-full border border-[#799381] px-6 py-3 text-sm transition hover:bg-[#365e50]">Open doctor workspace <ArrowRight className="size-4" /></Link></div></section>
+        <section className="mx-auto grid max-w-7xl gap-8 px-6 pb-20 md:grid-cols-[1fr_1.4fr] md:px-12 md:pb-24"><div><p className="eyebrow">Before you begin</p><h2 className="mt-3 font-serif text-4xl tracking-tight">A few things<br />you might wonder.</h2></div><div>{questions.map(([question, answer]) => <details key={question} className="group border-b border-[#d8ddcf] py-5"><summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-base font-medium [&::-webkit-details-marker]:hidden">{question}<Plus className="size-4 shrink-0 transition group-open:rotate-45" /></summary><p className="mt-4 pr-6 text-sm leading-relaxed text-[#63716a]">{answer}</p></details>)}</div></section>
       </main>
+      <footer className="border-t border-[#d8ddcf] px-6 py-8 md:px-12"><div className="mx-auto flex max-w-6xl flex-col justify-between gap-6 sm:flex-row"><div><Link href="/" className="font-serif text-2xl">MedAI.</Link><p className="mt-2 max-w-md text-xs leading-relaxed text-[#738075]">Built as a healthcare software project. Experimental tools, human decisions.<br />For urgent help, contact your local emergency service.</p></div><nav aria-label="Footer" className="flex flex-wrap items-start gap-6 text-sm"><a href="#care">Explore</a><a href="#how-it-works">How it works</a><Link href="/login">Sign in</Link><Link href="/register">Create account</Link></nav></div><p className="mx-auto mt-8 max-w-6xl text-xs text-[#738075]">&copy; {new Date().getFullYear()} MedAI</p></footer>
     </div>
   );
 }

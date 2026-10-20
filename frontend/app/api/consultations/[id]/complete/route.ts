@@ -13,9 +13,10 @@ export async function POST(
     }
 
     const { id } = await params;
-    const { prescription } = await req.json();
+    const body = await req.json().catch(() => null);
+    const prescription = body?.prescription;
 
-    if (!prescription || !prescription.trim()) {
+    if (typeof prescription !== "string" || !prescription.trim() || prescription.length > 20000) {
       return NextResponse.json(
         { error: "Prescription content is required to complete session." },
         { status: 400 }
@@ -44,10 +45,10 @@ export async function POST(
 
     // Update status to COMPLETED and set prescription
     const updatedConsultation = await db.consultation.update({
-      where: { id },
+      where: { id, doctorId: session.user.id, status: "ACTIVE" },
       data: {
         status: "COMPLETED",
-        prescription,
+        prescription: prescription.trim(),
       },
     });
 
@@ -57,7 +58,7 @@ export async function POST(
       status: updatedConsultation.status,
       message: "Consultation session completed and prescription issued.",
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Complete consultation error:", error);
     return NextResponse.json(
       { error: "Failed to complete consultation." },

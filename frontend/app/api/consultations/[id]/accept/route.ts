@@ -31,22 +31,19 @@ export async function POST(
       );
     }
 
-    // Update status to ACTIVE and set doctorId
-    const updatedConsultation = await db.consultation.update({
-      where: { id },
-      data: {
-        doctorId,
-        status: "ACTIVE",
-      },
+    const claimed = await db.consultation.updateMany({
+      where: { id, status: "WAITING", doctorId: null },
+      data: { doctorId, status: "ACTIVE" },
     });
+    if (claimed.count === 0) return NextResponse.json({ error: "Another doctor has already accepted this patient." }, { status: 409 });
 
     return NextResponse.json({
       success: true,
-      consultationId: updatedConsultation.id,
-      status: updatedConsultation.status,
+      consultationId: id,
+      status: "ACTIVE",
       message: "Patient accepted successfully.",
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Accept consultation error:", error);
     return NextResponse.json(
       { error: "Failed to accept patient." },

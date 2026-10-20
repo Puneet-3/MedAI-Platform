@@ -1,0 +1,13 @@
+venv/
+.venv/
+__pycache__/
+.env
+.env.*
+*.pkl
+*.pth
+*.tmp
+
+# Bundle only the installed checkpoint, not backups or research data.
+!xray_model.pth
+dataset/pneumoniamnist/
+.model-cache/

@@ -13,9 +13,10 @@ export async function POST(
     }
 
     const { id } = await params;
-    const { doctorNotes } = await req.json();
+    const body = await req.json().catch(() => null);
+    const doctorNotes = body?.doctorNotes;
 
-    if (!doctorNotes || !doctorNotes.trim()) {
+    if (typeof doctorNotes !== "string" || !doctorNotes.trim() || doctorNotes.length > 20000) {
       return NextResponse.json({ error: "Doctor notes are required." }, { status: 400 });
     }
 
@@ -28,7 +29,9 @@ export async function POST(
       return NextResponse.json({ error: "Medical report not found." }, { status: 404 });
     }
 
-    // Update status to REVIEWED, save doctorNotes and doctorId
+    if (report.doctorId && report.doctorId !== session.user.id) return NextResponse.json({ error: "This report has already been reviewed by another doctor." }, { status: 409 });
+
+    // Save the review with the attending doctor.
     const updatedReport = await db.report.update({
       where: { id },
       data: {
@@ -44,7 +47,7 @@ export async function POST(
       status: updatedReport.status,
       message: "Report clinically reviewed successfully.",
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Clinical report review error:", error);
     return NextResponse.json({ error: "Failed to submit clinical review notes." }, { status: 500 });
   }

@@ -1,0 +1,14 @@
+[
+  {
+    "file": "normal.png",
+    "publisher_split": "test",
+    "index": 1,
+    "reference_label": "NORMAL"
+  },
+  {
+    "file": "pneumonia.png",
+    "publisher_split": "test",
+    "index": 0,
+    "reference_label": "PNEUMONIA"
+  }
+]

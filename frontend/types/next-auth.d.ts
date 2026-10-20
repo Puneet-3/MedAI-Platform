@@ -6,6 +6,7 @@ declare module "next-auth" {
     id: string;
     role: Role;
     subscription: Subscription;
+    doctorAccessRequested?: boolean;
   }
 
   interface Session {
@@ -13,6 +14,7 @@ declare module "next-auth" {
       id: string;
       role: Role;
       subscription: Subscription;
+      doctorAccessRequested: boolean;
     } & DefaultSession["user"];
   }
 }
@@ -22,5 +24,6 @@ declare module "next-auth/jwt" {
     id: string;
     role: Role;
     subscription: Subscription;
+    doctorAccessRequested?: boolean;
   }
 }

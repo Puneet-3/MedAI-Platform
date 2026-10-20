@@ -69,10 +69,10 @@ def train_chatbot():
     # Train MLPClassifier
     print("Training MLPClassifier...")
     clf = MLPClassifier(
-        hidden_layer_sizes=(128, 64), 
-        activation="relu", 
-        solver="adam", 
-        max_iter=1200, 
+        hidden_layer_sizes=(128, 64),
+        activation="relu",
+        solver="adam",
+        max_iter=1200,
         random_state=42,
         early_stopping=False
     )
@@ -81,7 +81,7 @@ def train_chatbot():
     # Calculate training loss
     train_loss = clf.loss_
     print(f"Final training loss: {train_loss:.6f}")
-    
+
     # Save training outputs
     model_data = {
         "model": clf,
@@ -90,9 +90,11 @@ def train_chatbot():
         "intents": intents_data["intents"]
     }
 
-    with open(model_export_path, "wb") as f:
+    temporary_path = model_export_path + ".tmp"
+    with open(temporary_path, "wb") as f:
         pickle.dump(model_data, f)
-        
+    os.replace(temporary_path, model_export_path)
+
     print(f"Chatbot model saved successfully to {model_export_path}")
 
 if __name__ == "__main__":

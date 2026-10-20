@@ -25,3 +25,14 @@ Thumbs.db
 **/*.pth
 **/*.h5
 **/*.onnx
+**/app/generated/
+**/tsconfig.tsbuildinfo
+frontend/storage/
+frontend/public/uploads/
+*.log
+!**/.env.example
+
+# Downloaded research images and reusable CNN feature caches
+fastapi/dataset/pneumoniamnist/
+fastapi/.model-cache/
+**/*.npz.part

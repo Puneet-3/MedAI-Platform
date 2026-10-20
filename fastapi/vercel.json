@@ -1,0 +1,8 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "fastapi",
+  "regions": ["bom1"],
+  "buildCommand": "python verify_deployment.py",
+  "functions": { "main.py": { "maxDuration": 60, "includeFiles": "{*.pkl,*.pth,*.json}" } },
+  "env": { "VERCEL_SUPPORT_LARGE_FUNCTIONS": "1", "XRAY_CPU_THREADS": "2" }
+}

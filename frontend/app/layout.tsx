@@ -1,38 +1,17 @@
 import type { Metadata } from "next";
-import { Roboto, Geist_Mono, Newsreader } from "next/font/google";
 import "./globals.css";
 
-const roboto = Roboto({
-  weight: ["300", "400", "500", "700", "900"],
-  variable: "--font-sans",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const newsreader = Newsreader({
-  variable: "--font-serif",
-  subsets: ["latin"],
-  style: ["normal", "italic"],
-  display: "swap",
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-  display: "swap",
-});
-
 export const metadata: Metadata = {
-  title: "MedAI - Smart Healthcare Platform",
-  description: "AI-driven diagnostics, consultation, and chatbot platform.",
+  title: { default: "MedAI | A clearer next step for your health", template: "%s | MedAI" },
+  description: "Keep your symptoms, medical reports, and doctor conversations together. An experimental healthcare project built around people.",
   icons: {
     icon: [
-      { url: "/icon.svg", type: "image/svg+xml" },
-      { url: "/icon.png" },
-      { url: "/favicon.ico" },
+      { url: "/icon.svg?v=medai-green-2", type: "image/svg+xml" },
+      { url: "/icon.png?v=medai-green-2" },
+      { url: "/favicon.ico?v=medai-green-2" },
     ],
-    shortcut: "/icon.svg",
-    apple: "/icon.svg",
+    shortcut: "/favicon.ico?v=medai-green-2",
+    apple: "/icon.png?v=medai-green-2",
   },
 };
 
@@ -44,8 +23,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      data-scroll-behavior="smooth"
       suppressHydrationWarning
-      className={`${roboto.variable} ${newsreader.variable} ${geistMono.variable} h-full antialiased`}
+      className="h-full antialiased scroll-smooth"
     >
       <head>
         <script

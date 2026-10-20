@@ -1,83 +1,23 @@
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
+import { inference, InferenceError } from "@/lib/inference";
 import { NextResponse } from "next/server";
-
+interface PredictionResponse { results: { disease: string; confidence: number }[]; recommended_test: string | null; }
 export async function POST(req: Request) {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "USER") return NextResponse.json({ error: "Please sign in as a patient." }, { status: 401 });
+  const body = await req.json().catch(() => null);
+  if (!Array.isArray(body?.symptoms) || !body.symptoms.length || body.symptoms.length > 132 || body.symptoms.some((s: unknown) => typeof s !== "string" || !s.trim() || s.length > 100)) {
+    return NextResponse.json({ error: "Choose between 1 and 132 symptoms from the list." }, { status: 400 });
+  }
+  const symptoms = [...new Set<string>(body.symptoms)];
   try {
-    // 1. Session verification
-    const session = await auth();
-    if (!session || !session.user || !session.user.id) {
-      return NextResponse.json(
-        { error: "Access denied. Authentication required." },
-        { status: 401 }
-      );
-    }
-
-    // 2. Validate input payload
-    const { symptoms } = await req.json();
-    if (!symptoms || !Array.isArray(symptoms) || symptoms.length === 0) {
-      return NextResponse.json(
-        { error: "Invalid payload. 'symptoms' must be a non-empty array of strings." },
-        { status: 400 }
-      );
-    }
-
-    // 3. Forward request to FastAPI model service
-    const fastapiUrl = process.env.FASTAPI_URL || "http://localhost:8080";
-    const fastapiSecret = process.env.FASTAPI_SECRET || "";
-
-    const response = await fetch(`${fastapiUrl}/predict`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-FastAPI-Secret": fastapiSecret,
-      },
-      body: JSON.stringify({ symptoms }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      return NextResponse.json(
-        { error: `ML Service Error: ${errorText}` },
-        { status: response.status }
-      );
-    }
-
-    const mlData = await response.json(); // Expected format: { results, recommended_test }
-
-    // 4. Save prediction record to database (Supabase via Prisma)
-    const savedPrediction = await db.prediction.create({
-      data: {
-        userId: session.user.id,
-        symptoms: symptoms,
-        results: mlData.results,
-        recommendedTest: mlData.recommended_test || null,
-      },
-    });
-
-    // 5. Respond back to frontend client
-    return NextResponse.json({
-      id: savedPrediction.id,
-      results: mlData.results,
-      recommendedTest: mlData.recommended_test || null,
-      createdAt: savedPrediction.createdAt,
-    });
-  } catch (err: any) {
-    console.error("Next.js Proxy Predict Error:", err);
-    let errorMsg = "Internal application error processing prediction request.";
-    
-    // Check if the error is due to FastAPI being offline
-    if (
-      err.code === "ECONNREFUSED" || 
-      err.message?.includes("fetch failed") || 
-      err.message?.includes("connect ECONNREFUSED")
-    ) {
-      errorMsg = "The AI prediction service is temporarily offline or undergoing maintenance. Please try again in a few moments, or use our consultations portal.";
-    }
-
-    return NextResponse.json(
-      { error: errorMsg },
-      { status: 503 }
-    );
+    const result = await inference<PredictionResponse>("/predict", { symptoms });
+    const record = await db.prediction.create({ data: { userId: session.user.id, symptoms, results: result.results, recommendedTest: result.recommended_test } });
+    return NextResponse.json({ id: record.id, results: result.results, recommendedTest: record.recommendedTest, createdAt: record.createdAt });
+  } catch (error) {
+    if (error instanceof InferenceError) return NextResponse.json({ error: error.message }, { status: error.status });
+    console.error("Saving symptom check failed", error);
+    return NextResponse.json({ error: "Your check could not be saved. Please try again shortly." }, { status: 503 });
   }
 }

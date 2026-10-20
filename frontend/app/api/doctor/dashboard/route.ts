@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
     const session = await auth();
     if (!session || !session.user || session.user.role !== "DOCTOR") {
@@ -88,7 +88,7 @@ export async function GET(req: Request) {
     // 4. Fetch ANALYZED reports awaiting physician review
     const analyzedReports = await db.report.findMany({
       where: {
-        status: "ANALYZED",
+        status: { in: ["PENDING", "ANALYZED"] },
       },
       include: {
         patient: {
@@ -105,9 +105,9 @@ export async function GET(req: Request) {
       queue,
       active,
       history,
-      analyzedReports: analyzedReports.reverse(), // Show newest first
+      analyzedReports: analyzedReports.reverse().map(report => ({ ...report, fileUrl: `/api/reports/${report.id}/file` })), // Show newest first
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Doctor dashboard fetch error:", error);
     return NextResponse.json(
       { error: "Failed to load dashboard data." },

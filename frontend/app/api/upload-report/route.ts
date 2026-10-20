@@ -1,146 +1,63 @@
 import { db } from "@/lib/db";
 import { auth } from "@/auth";
+import { reportExtension, saveReport, removeReport } from "@/lib/report-storage";
 import { NextResponse } from "next/server";
-import { writeFileSync, mkdirSync, existsSync } from "fs";
-import { join } from "path";
+import { REPORT_MAX_BYTES, REPORT_MAX_MB } from "@/lib/report-limits";
 
+export const maxDuration = 60;
+
+const types = ["Chest X-Ray", "Complete Blood Count", "Urinalysis Report", "MRI / CT Scan", "Other Medical Report"];
 export async function POST(req: Request) {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "USER") return NextResponse.json({ error: "Please sign in as a patient." }, { status: 401 });
+  if (Number(req.headers.get("content-length")) > REPORT_MAX_BYTES + 128 * 1024) return NextResponse.json({ error: `Choose a file smaller than ${REPORT_MAX_MB} MB.` }, { status: 413 });
   try {
-    const session = await auth();
-    if (!session || !session.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const form = await req.formData();
+    const file = form.get("file");
+    const reportType = form.get("reportType");
+    if (!(file instanceof File) || !file.size || file.size > REPORT_MAX_BYTES || typeof reportType !== "string" || !types.includes(reportType)) {
+      return NextResponse.json({ error: `Choose a report type and a JPG, PNG, or PDF file smaller than ${REPORT_MAX_MB} MB.` }, { status: 400 });
     }
-
-    const formData = await req.formData();
-    const file = formData.get("file") as File;
-    const reportType = formData.get("reportType") as string || "Chest X-Ray";
-
-    if (!file) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 });
+    const bytes = Buffer.from(await file.arrayBuffer());
+    const extension = reportExtension(bytes);
+    if (!extension || (reportType === "Chest X-Ray" && extension === "pdf")) {
+      return NextResponse.json({ error: reportType === "Chest X-Ray" ? "Upload chest X-rays as JPG or PNG images." : "Only JPG, PNG, and PDF files are supported." }, { status: 400 });
     }
-
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-
-    // Sanitize file extension and generate filename
-    const fileExt = file.name.split(".").pop();
-    const fileName = `${session.user.id}_${Date.now()}.${fileExt}`;
-
-    let fileUrl = "";
-    
-    // Check if Supabase storage credentials are configured
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    if (supabaseUrl && supabaseKey) {
-      // 1. Upload to Supabase Storage Bucket 'medical-reports'
-      const uploadUrl = `${supabaseUrl}/storage/v1/object/medical-reports/${fileName}`;
-      const uploadRes = await fetch(uploadUrl, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${supabaseKey}`,
-          "Content-Type": file.type,
-          "x-upsert": "true"
-        },
-        body: buffer
-      });
-
-      if (!uploadRes.ok) {
-        const errorText = await uploadRes.text();
-        throw new Error(`Supabase upload failed: ${errorText}`);
-      }
-
-      // 2. Generate signed URL (expires in 1 hour)
-      const signUrl = `${supabaseUrl}/storage/v1/object/sign/medical-reports/${fileName}`;
-      const signRes = await fetch(signUrl, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${supabaseKey}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ expiresIn: 3600 })
-      });
-
-      if (!signRes.ok) {
-        throw new Error("Failed to generate signed URL");
-      }
-
-      const signData = await signRes.json();
-      fileUrl = `${supabaseUrl}/storage/v1${signData.signedURL}`;
-    } else {
-      // Fallback: Local file system upload for offline / dev testing
-      const uploadDir = join(process.cwd(), "public", "uploads");
-      if (!existsSync(uploadDir)) {
-        mkdirSync(uploadDir, { recursive: true });
-      }
-      const filePath = join(uploadDir, fileName);
-      writeFileSync(filePath, buffer);
-      
-      // Determine the public URL path
-      // In local dev, if Next.js runs on http://localhost:3000, we can use the absolute local url or relative path
-      // Since FastAPI runs on localhost:8080, we should construct an absolute url for the FastAPI endpoint if it requests it.
-      // But wait! In FastAPI /analyze endpoint, we made it check if it starts with '/uploads/' and read directly from public/uploads folder!
-      // This means we can just pass '/uploads/fileName' and the Python backend will read it locally on disk! Extremely fast and robust!
-      fileUrl = `/uploads/${fileName}`;
+    const reference = await saveReport(bytes, extension);
+    let report;
+    try {
+      report = await db.report.create({ data: { userId: session.user.id, fileUrl: reference, reportType } });
+    } catch (error) {
+      await removeReport(reference).catch(() => {});
+      throw error;
     }
-
-    // Create report record in DB (status defaults to PENDING)
-    let report = await db.report.create({
-      data: {
-        userId: session.user.id,
-        fileUrl,
-        reportType,
-        status: "PENDING"
-      }
-    });
-
-    // If it is a Chest X-Ray, trigger PyTorch CNN analysis on FastAPI
+    let analysisMessage = "Your report has been saved for doctor review.";
     if (reportType === "Chest X-Ray") {
       try {
-        const fastapiUrl = process.env.FASTAPI_URL || "http://localhost:8080";
-        const secret = process.env.FASTAPI_SECRET || "";
-
-        // If local dev upload, we can pass absolute address or local path
-        // Since we handled "/uploads/" prefix in main.py, we can send the local relative path directly!
-        const analyzeRes = await fetch(`${fastapiUrl}/analyze`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-fastapi-secret": secret
-          },
-          body: JSON.stringify({ image_url: fileUrl })
+        const upload = new FormData();
+        upload.append("file", new Blob([new Uint8Array(bytes)], { type: file.type }), `xray.${extension}`);
+        const response = await fetch(`${process.env.FASTAPI_URL || "http://localhost:8080"}/analyze-upload`, {
+          method: "POST", headers: { "x-fastapi-secret": process.env.FASTAPI_SECRET || "" },
+          body: upload, signal: AbortSignal.timeout(30000),
         });
-
-        if (analyzeRes.ok) {
-          const analyzeData = await analyzeRes.json();
-          // Update DB record with analysis predictions
-          report = await db.report.update({
-            where: { id: report.id },
-            data: {
-              status: "ANALYZED",
-              cnnLabel: analyzeData.label,
-              cnnConfidence: analyzeData.confidence
-            }
+        if (response.ok) {
+          const result = await response.json();
+          // A doctor can review a pending report while screening is running.
+          // Never overwrite that completed review with a later model response.
+          await db.report.updateMany({
+            where: { id: report.id, status: "PENDING" },
+            data: { status: "ANALYZED", cnnLabel: result.label, cnnConfidence: result.confidence },
           });
-        } else {
-          const errText = await analyzeRes.text();
-          console.error("FastAPI analyze failed:", errText);
-        }
-      } catch (err) {
-        console.error("Failed to connect to FastAPI analyze endpoint:", err);
-      }
+          report = await db.report.findUniqueOrThrow({ where: { id: report.id } });
+          analysisMessage = report.status === "REVIEWED"
+            ? "Your image is saved, and a doctor has already reviewed it."
+            : "Your image has been screened. A doctor still needs to review the result.";
+        } else analysisMessage = "Your image is saved. Automated screening is unavailable; it can still be reviewed by a doctor.";
+      } catch { analysisMessage = "Your image is saved. Automated screening is unavailable; it can still be reviewed by a doctor."; }
     }
-
-    return NextResponse.json({
-      success: true,
-      reportId: report.id,
-      fileUrl,
-      status: report.status,
-      cnnLabel: report.cnnLabel,
-      cnnConfidence: report.cnnConfidence
-    });
-  } catch (error: any) {
-    console.error("Upload report error:", error);
-    return NextResponse.json({ error: error.message || "Upload failed" }, { status: 500 });
+    return NextResponse.json({ success: true, reportId: report.id, status: report.status, message: analysisMessage }, { status: 201 });
+  } catch (error) {
+    console.error("Report upload failed", error);
+    return NextResponse.json({ error: "We couldn't save your report. Please try again." }, { status: 503 });
   }
 }

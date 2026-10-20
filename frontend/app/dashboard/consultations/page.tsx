@@ -2,19 +2,17 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  Video, 
-  User, 
-  Clock, 
-  CheckCircle, 
-  AlertCircle, 
+import {
+  Video,
+  Clock,
+  CheckCircle,
+  AlertCircle,
   Download,
   Loader2,
   Calendar,
-  Sparkles,
   Stethoscope
 } from "lucide-react";
-import { jsPDF } from "jspdf";
+import { downloadPrescription } from "@/lib/prescription";
 
 interface Consultation {
   id: string;
@@ -45,16 +43,25 @@ export default function ConsultationsPage() {
 
       setCurrent(data.current);
       setHistory(data.history || []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err.message || "An error occurred.");
+      setError((err instanceof Error ? err.message : "") || "An error occurred.");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchConsultations();
+    const controller = new AbortController();
+    fetch(`/api/consultations`, { signal: controller.signal })
+      .then(async response => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "We couldn't load this page.");
+        if (!controller.signal.aborted) { setCurrent(data.current); setHistory(data.history || []); }
+      })
+      .catch((error: unknown) => { if (!controller.signal.aborted) setError(error instanceof Error ? error.message : "We couldn't load this page."); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
   }, []);
 
   // Poll for status updates if the consultation is in WAITING or ACTIVE
@@ -91,98 +98,14 @@ export default function ConsultationsPage() {
       if (!res.ok) throw new Error(data.error || "Failed to request consultation.");
 
       fetchConsultations();
-    } catch (err: any) {
-      setError(err.message || "Failed to request consultation.");
+    } catch (err: unknown) {
+      setError((err instanceof Error ? err.message : "") || "Failed to request consultation.");
     } finally {
       setActionLoading(false);
     }
   };
 
-  const generatePDF = (c: Consultation) => {
-    if (!c.prescription) return;
-    const doc = new jsPDF();
-
-    // Color Palette
-    const primaryColor = [16, 185, 129]; // Emerald 600
-    const darkTextColor = [30, 41, 59]; // Slate 800
-    const lightTextColor = [100, 116, 139]; // Slate 500
-
-    // Title & Header
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(22);
-    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.text("MedAI Healthcare", 20, 25);
-    
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(lightTextColor[0], lightTextColor[1], lightTextColor[2]);
-    doc.text("Smart AI Diagnostics & Digital Consultations", 20, 31);
-    
-    // Horizontal rule
-    doc.setDrawColor(226, 232, 240);
-    doc.line(20, 36, 190, 36);
-
-    // Document Metadata
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(darkTextColor[0], darkTextColor[1], darkTextColor[2]);
-    doc.text("DIGITAL PRESCRIPTION", 20, 47);
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.setTextColor(lightTextColor[0], lightTextColor[1], lightTextColor[2]);
-    doc.text(`Prescription ID: ${c.id.toUpperCase().substring(0, 8)}`, 130, 47);
-    doc.text(`Date Issued: ${new Date(c.createdAt).toLocaleDateString()}`, 130, 52);
-
-    // Patient & Doctor Details
-    doc.setFillColor(250, 249, 245);
-    doc.rect(20, 58, 170, 25, "F");
-    doc.setDrawColor(241, 239, 233);
-    doc.rect(20, 58, 170, 25, "S");
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.setTextColor(darkTextColor[0], darkTextColor[1], darkTextColor[2]);
-    doc.text("Attending Physician:", 25, 65);
-    doc.text("Patient Information:", 110, 65);
-
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(lightTextColor[0], lightTextColor[1], lightTextColor[2]);
-    doc.text(`Dr. ${c.doctor?.name || "Clinical Professional"}`, 25, 71);
-    doc.text(`Email: ${c.doctor?.email || "consultations@medai.com"}`, 25, 76);
-    doc.text(`ID: ${c.patientId.substring(0, 8)}`, 110, 71);
-
-    // Content Label
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.setTextColor(darkTextColor[0], darkTextColor[1], darkTextColor[2]);
-    doc.text("Rx — Treatment Plan & Notes:", 20, 97);
-
-    // Prescription Text
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.setTextColor(darkTextColor[0], darkTextColor[1], darkTextColor[2]);
-    
-    // Handle word wrap
-    const prescriptionText = c.prescription;
-    const splitText = doc.splitTextToSize(prescriptionText, 170);
-    doc.text(splitText, 20, 105);
-
-    // Signature Block (Static placeholder)
-    const pageHeight = doc.internal.pageSize.height;
-    doc.setDrawColor(226, 232, 240);
-    doc.line(130, pageHeight - 45, 180, pageHeight - 45);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(8);
-    doc.text("Authorized Signature", 140, pageHeight - 40);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(7);
-    doc.setTextColor(lightTextColor[0], lightTextColor[1], lightTextColor[2]);
-    doc.text("Generated securely via MedAI Smart Health Portal", 20, pageHeight - 15);
-
-    doc.save(`MedAI-Prescription-${c.id.substring(0,8)}.pdf`);
-  };
-
+  const generatePDF = (c: Consultation) => downloadPrescription(c);
   if (loading) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-3">
@@ -195,14 +118,14 @@ export default function ConsultationsPage() {
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div>
-        <h2 className="text-xl md:text-2xl font-bold tracking-tight">Telehealth Consultations</h2>
+        <h2 className="text-xl md:text-2xl font-bold tracking-tight">Your consultations</h2>
         <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-          Connect with registered doctors instantly and get certified digital prescriptions.
+          Request a text consultation. When a doctor is available, you can discuss your symptoms and download their notes.
         </p>
       </div>
 
       {error && (
-        <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/10 border border-red-200/50 dark:border-red-950/40 text-red-700 dark:text-red-400 text-xs flex gap-2 items-center">
+        <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-950 text-red-700 dark:text-red-400 text-xs flex gap-2 items-center">
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{error}</span>
         </div>
@@ -214,8 +137,8 @@ export default function ConsultationsPage() {
         <div className="lg:col-span-7">
           {!current ? (
             /* Call to Action: No consultations */
-            <div className="bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800 rounded-3xl p-8 space-y-6 shadow-sm">
-              <div className="p-4 w-fit rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400">
+            <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-3xl p-8 space-y-6 shadow-sm">
+              <div className="p-4 w-fit rounded-2xl bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400">
                 <Stethoscope className="w-8 h-8" />
               </div>
               <div className="space-y-2">
@@ -246,42 +169,42 @@ export default function ConsultationsPage() {
             </div>
           ) : current.status === "WAITING" ? (
             /* Waiting Queue Room UI */
-            <div className="bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800 rounded-3xl p-8 text-center space-y-6 shadow-sm min-h-[350px] flex flex-col justify-center items-center">
+            <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-3xl p-8 text-center space-y-6 shadow-sm min-h-[350px] flex flex-col justify-center items-center">
               <div className="relative">
                 {/* Pulsating radar circles */}
-                <div className="absolute inset-0 rounded-full bg-emerald-500/20 animate-ping scale-150" />
-                <div className="absolute inset-0 rounded-full bg-emerald-500/10 animate-ping scale-200" />
+                <div className="absolute inset-0 rounded-full bg-emerald-100 animate-ping scale-150" />
+                <div className="absolute inset-0 rounded-full bg-emerald-50 animate-ping scale-200" />
                 <div className="relative p-5 rounded-full bg-emerald-600 text-white shadow-lg shadow-emerald-500/20">
                   <Stethoscope className="w-8 h-8" />
                 </div>
               </div>
-              
+
               <div className="space-y-2 max-w-sm">
-                <h3 className="text-lg font-bold text-neutral-850 dark:text-neutral-100 flex items-center justify-center gap-2">
+                <h3 className="text-lg font-bold text-neutral-800 dark:text-neutral-100 flex items-center justify-center gap-2">
                   Waiting Room Queue
                 </h3>
-                <p className="text-xs text-neutral-500 dark:text-neutral-450 leading-relaxed">
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">
                   Your request has been successfully broadcast to all active clinical professionals. Please keep this browser window open. We will automatically redirect you as soon as a doctor accepts your consultation.
                 </p>
               </div>
 
-              <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 uppercase tracking-widest bg-emerald-50 dark:bg-emerald-950/30 px-4 py-2 rounded-full">
+              <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 uppercase tracking-widest bg-emerald-50 dark:bg-emerald-950 px-4 py-2 rounded-full">
                 <Clock className="w-4 h-4 animate-pulse" />
                 <span>Searching Attending Doctor...</span>
               </div>
             </div>
           ) : (
             /* Active Consultation Card */
-            <div className="bg-gradient-to-tr from-emerald-50/20 to-emerald-100/5 dark:from-emerald-950/20 dark:to-emerald-950/5 border border-emerald-500/35 rounded-3xl p-8 space-y-6 shadow-sm">
+            <div className="bg-emerald-50 dark:bg-emerald-950 border border-emerald-500 rounded-3xl p-8 space-y-6 shadow-sm">
               <div className="flex justify-between items-start">
                 <div className="p-4 w-fit rounded-2xl bg-emerald-600 text-white shadow-md shadow-emerald-500/10">
                   <Video className="w-8 h-8 animate-pulse" />
                 </div>
-                <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300">
+                <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">
                   Active Consultation
                 </span>
               </div>
-              
+
               <div className="space-y-2">
                 <h3 className="text-lg font-bold text-neutral-800 dark:text-neutral-200">
                   Consultation accepted by Physician
@@ -290,14 +213,14 @@ export default function ConsultationsPage() {
                   Your session is ready! You are currently matched with:
                 </p>
                 <div className="p-4 bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-2xl flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-emerald-55/10 text-emerald-600 flex items-center justify-center font-bold">
+                  <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
                     Dr
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-neutral-800 dark:text-neutral-250">
+                    <h4 className="text-xs font-bold text-neutral-800 dark:text-neutral-200">
                       Dr. {current.doctor?.name || "Clinical Professional"}
                     </h4>
-                    <p className="text-[10px] text-neutral-500">
+                    <p className="text-xs text-neutral-500">
                       {current.doctor?.email || "Attending Doctor"}
                     </p>
                   </div>
@@ -316,36 +239,36 @@ export default function ConsultationsPage() {
 
         {/* Right Side: Consultation History Panel */}
         <div className="lg:col-span-5 space-y-6">
-          <div className="bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800 rounded-3xl p-6 space-y-4 shadow-sm">
+          <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-3xl p-6 space-y-4 shadow-sm">
             <h3 className="text-sm font-bold text-neutral-800 dark:text-neutral-200 flex items-center gap-2">
               <Calendar className="w-4 h-4 text-neutral-500" />
               Consultation History
             </h3>
-            
+
             <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1">
               {history.length > 0 ? (
                 history.map((c) => (
                   <div
                     key={c.id}
-                    className="p-4 border border-neutral-100 dark:border-neutral-800 bg-neutral-50/20 dark:bg-neutral-950/10 rounded-2xl space-y-3"
+                    className="p-4 border border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 rounded-2xl space-y-3"
                   >
                     <div className="flex justify-between items-center">
-                      <span className="text-xs font-bold text-neutral-800 dark:text-neutral-250 truncate max-w-[150px]">
+                      <span className="text-xs font-bold text-neutral-800 dark:text-neutral-200 truncate max-w-[150px]">
                         Dr. {c.doctor?.name || "Clinical Staff"}
                       </span>
-                      <span className="text-[9px] text-neutral-500">
+                      <span className="text-[11px] text-neutral-500">
                         {new Date(c.createdAt).toLocaleDateString()}
                       </span>
                     </div>
 
-                    <div className="flex justify-between items-center pt-1 border-t border-neutral-100/50 dark:border-neutral-800/40">
-                      <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-650 uppercase">
+                    <div className="flex justify-between items-center pt-1 border-t border-neutral-100 dark:border-neutral-800">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 uppercase">
                         <CheckCircle className="w-3 h-3 text-emerald-600" /> Complete
                       </span>
                       {c.prescription && (
                         <button
                           onClick={() => generatePDF(c)}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-750 text-[10px] font-bold rounded-xl transition-all"
+                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-xs font-bold rounded-xl transition-all"
                         >
                           <Download className="w-3 h-3" /> PDF Rx
                         </button>
@@ -354,12 +277,12 @@ export default function ConsultationsPage() {
                   </div>
                 ))
               ) : (
-                <div className="text-center py-10 text-neutral-550 space-y-2">
+                <div className="text-center py-10 text-neutral-500 space-y-2">
                   <div className="p-2.5 w-fit h-fit rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-400 mx-auto">
                     <Clock className="w-5 h-5" />
                   </div>
                   <h4 className="text-xs font-bold">No Past Consultations</h4>
-                  <p className="text-[10px] text-neutral-500 max-w-xs mx-auto">
+                  <p className="text-xs text-neutral-500 max-w-xs mx-auto">
                     Once you complete a live consultation session, your reports and prescriptions will appear here.
                   </p>
                 </div>

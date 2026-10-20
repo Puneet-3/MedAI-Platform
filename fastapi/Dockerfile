@@ -1,5 +1,5 @@
 # Keeps the docker image size small and optimized.
-FROM python:3.11-slim
+FROM python:3.13-slim
 
 # Sets the working directory inside the container
 WORKDIR /code
@@ -18,7 +18,7 @@ COPY . /code
 
 # --- GENERATE MODELS DURING BUILD ---
 # This runs the training scripts so the models are compiled and ready inside the container!
-RUN python train.py && python train_chatbot.py && python train_cnn.py
+RUN python train.py && python train_chatbot.py
 
 # Set up permissions for Hugging Face/Render running environment
 RUN useradd -m -u 1000 user && chown -R user:user /code

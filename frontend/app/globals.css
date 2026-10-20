@@ -7,10 +7,10 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans), "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-serif: var(--font-serif), "Newsreader", Georgia, serif;
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans), "Roboto", sans-serif;
+  --font-sans: "Segoe UI", Arial, sans-serif;
+  --font-serif: Georgia, "Times New Roman", serif;
+  --font-mono: Consolas, monospace;
+  --font-heading: "Segoe UI", Arial, sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -50,6 +50,10 @@
 }
 
 :root {
+  color-scheme: light;
+  --field-background: #ffffff;
+  --field-foreground: #171717;
+  --field-placeholder: #737373;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -85,6 +89,10 @@
 }
 
 .dark {
+  color-scheme: dark;
+  --field-background: #171717;
+  --field-foreground: #f5f5f5;
+  --field-placeholder: #a3a3a3;
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
@@ -100,8 +108,8 @@
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
+  --border: #404040;
+  --input: #404040;
   --ring: oklch(0.556 0 0);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
@@ -114,7 +122,7 @@
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.269 0 0);
   --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-border: #404040;
   --sidebar-ring: oklch(0.556 0 0);
 }
 
@@ -123,11 +131,11 @@
     @apply border-border outline-ring/50;
   }
   ::selection {
-    background-color: #FCE7F3;
-    color: #9D174D;
+    background-color: #dce6d2;
+    color: #294e42;
   }
   html, body {
-    font-family: var(--font-sans), "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-family: "Segoe UI", Arial, sans-serif;
   }
   body {
     @apply bg-background text-foreground;
@@ -136,19 +144,44 @@
     @apply font-sans;
   }
 
-  /* Form Control Text Visibility & High Contrast */
   input, select, textarea {
-    color: #0f172a;
+    color: var(--field-foreground);
+    caret-color: var(--field-foreground);
   }
   input::placeholder, textarea::placeholder {
-    color: #94a3b8;
+    color: var(--field-placeholder);
+    opacity: 1;
   }
   input:-webkit-autofill,
-  input:-webkit-autofill:hover, 
+  input:-webkit-autofill:hover,
   input:-webkit-autofill:focus,
   textarea:-webkit-autofill,
-  select:-webkit-autofill {
-    -webkit-text-fill-color: #0f172a !important;
-    transition: background-color 5000s ease-in-out 0s;
+  textarea:-webkit-autofill:hover,
+  textarea:-webkit-autofill:focus,
+  select:-webkit-autofill,
+  select:-webkit-autofill:hover,
+  select:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--field-foreground) !important;
+    box-shadow: 0 0 0 1000px var(--field-background) inset !important;
+    caret-color: var(--field-foreground);
   }
+}
+@layer base {
+  :focus-visible { outline: 2px solid #66835b; outline-offset: 4px; }
+  button:not(:disabled), summary { cursor: pointer; }
+  button:disabled { cursor: not-allowed; }
+}
+.auth-page {
+  color-scheme: light;
+  color: #171717;
+  --field-background: #ffffff;
+  --field-foreground: #171717;
+  --field-placeholder: #737373;
+}
+.skip-link { position: fixed; left: 1rem; top: -5rem; z-index: 100; border-radius: .5rem; background: #294e42; color: white; padding: .75rem 1rem; }
+.skip-link:focus { top: 1rem; }
+.eyebrow { font-size: .7rem; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: #71866a; }
+.landing { color-scheme: light; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }

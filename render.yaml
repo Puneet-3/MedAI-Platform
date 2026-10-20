@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: medai-consultation-chat
+    runtime: node
+    plan: free
+    region: singapore
+    rootDir: frontend
+    buildCommand: npm ci
+    startCommand: npm run socket
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        sync: false
+      - key: SOCKET_SECRET
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false

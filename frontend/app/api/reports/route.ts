@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
     const session = await auth();
     if (!session || !session.user) {
@@ -14,8 +14,8 @@ export async function GET(req: Request) {
     });
 
     // Invert to show newest first (since we don't have a createdAt timestamp)
-    return NextResponse.json({ success: true, reports: reports.reverse() });
-  } catch (error: any) {
+    return NextResponse.json({ success: true, reports: reports.reverse().map(report => ({ ...report, fileUrl: `/api/reports/${report.id}/file` })) });
+  } catch (error: unknown) {
     console.error("Fetch reports error:", error);
     return NextResponse.json({ error: "Failed to load reports" }, { status: 500 });
   }

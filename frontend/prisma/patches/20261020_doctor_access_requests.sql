@@ -1,0 +1,2 @@
+ALTER TABLE public.users
+ADD COLUMN IF NOT EXISTS doctor_access_requested BOOLEAN NOT NULL DEFAULT FALSE;

@@ -1,8 +1,10 @@
+import type { Role, Subscription } from "@/app/generated/prisma";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { authConfig } from "./auth.config";
 import { db } from "@/lib/db";
 import bcrypt from "bcryptjs";
+import { normalizeEmail } from "@/lib/validation";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -13,12 +15,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        role: { label: "Role", type: "text" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
+        const email = normalizeEmail(credentials?.email);
+        if (!email || typeof credentials?.password !== "string") return null;
+        if (typeof credentials.role !== "string" || !["USER", "DOCTOR", "ADMIN"].includes(credentials.role)) return null;
 
         const user = await db.user.findUnique({
-          where: { email: credentials.email as string },
+          where: { email },
         });
 
         if (!user || !user.passwordHash) return null;
@@ -29,12 +34,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         );
 
         if (!isPasswordValid) return null;
+        // Pending doctor applicants select Doctor, but keep restricted access.
+        const loginRole = user.role === "USER" && user.doctorAccessRequested ? "DOCTOR" : user.role;
+        if (credentials.role !== loginRole) return null;
 
         return {
           id: user.id,
           email: user.email,
           name: user.name,
           role: user.role,
+          doctorAccessRequested: user.doctorAccessRequested,
           subscription: user.subscription,
         };
       },
@@ -42,41 +51,35 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   callbacks: {
     ...authConfig.callbacks,
-    async signIn({ user, account }) {
+    async signIn({ user, account, profile }) {
       if (account?.provider === "google") {
-        if (!user.email) return false;
-
-        const existingUser = await db.user.findUnique({
-          where: { email: user.email },
+        const email = normalizeEmail(user.email);
+        if (!email || profile?.email_verified !== true) return false;
+        user.email = email;
+        await db.user.upsert({
+          where: { email },
+          update: {},
+          create: { email, name: user.name || "", role: "USER", subscription: "FREE" },
         });
-
-        if (!existingUser) {
-          await db.user.create({
-            data: {
-              email: user.email,
-              name: user.name || "",
-              role: "USER",
-              subscription: "FREE",
-            },
-          });
-        }
       }
       return true;
     },
     async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-        token.role = user.role;
-        token.subscription = user.subscription;
-      } else {
+      const email = normalizeEmail(user?.email || token.email);
+      if (!email) return null;
+      if (email) {
         const dbUser = await db.user.findUnique({
-          where: { email: token.email as string },
-          select: { id: true, role: true, subscription: true },
+          where: { email },
+          select: { id: true, name: true, role: true, subscription: true, doctorAccessRequested: true },
         });
         if (dbUser) {
           token.id = dbUser.id;
+          token.name = dbUser.name;
           token.role = dbUser.role;
+          token.doctorAccessRequested = dbUser.doctorAccessRequested;
           token.subscription = dbUser.subscription;
+        } else {
+          return null;
         }
       }
       return token;
@@ -84,8 +87,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string;
-        session.user.role = token.role as any;
-        session.user.subscription = token.subscription as any;
+        session.user.role = token.role as Role;
+        session.user.doctorAccessRequested = token.doctorAccessRequested === true;
+        session.user.subscription = token.subscription as Subscription;
       }
       return session;
     },

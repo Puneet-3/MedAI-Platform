@@ -2,139 +2,179 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { signIn } from "next-auth/react";
+import { signIn, getProviders } from "next-auth/react";
 import Link from "next/link";
-import { HeartPulse, AlertCircle, CheckCircle2 } from "lucide-react";
+import Image from "next/image";
+import { AlertCircle, CheckCircle2, ArrowLeft } from "lucide-react";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [registered, setRegistered] = useState(false);
-
+  const [dismissed, setDismissed] = useState(false);
+  const [googleAvailable, setGoogleAvailable] = useState(false);
   useEffect(() => {
-    if (searchParams.get("registered") === "true") {
-      setRegistered(true);
-    }
-  }, [searchParams]);
+    let active = true;
+    getProviders().then(providers => { if (active) setGoogleAvailable(!!providers?.google); }).catch(() => {});
+    return () => { active = false; };
+  }, []);
+  const registered = searchParams.get("registered") === "true" && !dismissed;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    setRegistered(false);
+    setDismissed(true);
 
     try {
       const res = await signIn("credentials", {
         redirect: false,
         email,
         password,
+        role,
       });
 
       if (res?.error) {
-        throw new Error("Invalid email or password.");
+        throw new Error(res.error === "CredentialsSignin" ? "Check your email, password, and selected role." : "Sign-in is unavailable at the moment. Please try again shortly.");
       }
 
-      router.push("/dashboard");
+      const callback = searchParams.get("callbackUrl");
+      router.push(callback?.startsWith("/") && !callback.startsWith("//") && !callback.includes("\\") ? callback : "/dashboard");
       router.refresh();
-    } catch (err: any) {
-      setError(err.message || "Authentication failed.");
+    } catch (err: unknown) {
+      setError((err instanceof Error ? err.message : "") || "Authentication failed.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#FFF5F8] via-[#F8FBFE] to-[#F1F6FB] flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans transition-all duration-300">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center space-y-4">
-        {/* Logo */}
-        <Link href="/" className="inline-block group py-2">
-          <span className="font-serif text-3xl sm:text-4xl font-normal text-neutral-900 tracking-tight group-hover:opacity-75 transition-opacity">
-            MedAI
-          </span>
-        </Link>
-        <div>
-          <h2 className="text-2xl font-black tracking-tight text-[#173364]">
-            Sign in to MedAI
-          </h2>
-          <p className="text-xs text-slate-600 mt-1">
-            Access your patient dashboard, diagnostic results, and chatbot
-          </p>
-        </div>
-      </div>
+    <div className="auth-page min-h-screen bg-[#f5f3ed] flex flex-col justify-center items-center p-4 sm:p-6 font-sans">
+      <div className="w-full max-w-sm space-y-6">
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-6 shadow-xl shadow-slate-200/50 border border-pink-100 rounded-3xl sm:px-10">
-          
+        {/* Logo and Header */}
+        <div className="text-center space-y-2">
+          <Link href="/" className="inline-flex items-center gap-2 group">
+            <Image
+              width={32} height={32}
+              src="/logo.png"
+              alt="MedAI Logo"
+              className="size-8 object-contain transition-transform group-hover:scale-105"
+            />
+            <span className="font-serif text-2xl font-normal text-neutral-900 tracking-tight">
+              MedAI
+            </span>
+          </Link>
+          <div>
+            <h1 className="text-xl font-semibold text-neutral-900 tracking-tight">
+              Sign in to your account
+            </h1>
+            <p className="text-xs text-neutral-500 mt-1">
+              Pick up where you left off.
+            </p>
+          </div>
+        </div>
+
+        {/* Clean Centered Card */}
+        <div className="bg-white border border-neutral-200 rounded-2xl p-6 sm:p-7 shadow-sm space-y-4">
+
           {registered && (
-            <div className="mb-4 p-3.5 rounded-xl bg-pink-50 border border-pink-200/60 flex gap-2 text-[#9D174D] text-xs font-semibold">
-              <CheckCircle2 className="w-4 h-4 shrink-0 text-[#E86591]" />
-              <span>Registration successful! Please sign in below.</span>
+            <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center gap-2 text-emerald-800 text-xs font-medium">
+              <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+              <span>Account created.</span>
             </div>
           )}
 
           {error && (
-            <div className="mb-4 p-3.5 rounded-xl bg-red-50 border border-red-200/60 flex gap-2 text-red-800 text-xs font-semibold">
-              <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
+            <div role="alert" className="p-3 rounded-xl bg-red-50 border border-red-200 flex items-center gap-2 text-red-800 text-xs font-medium">
+              <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
               <span>{error}</span>
             </div>
           )}
 
           <form className="space-y-4" onSubmit={handleSubmit}>
-            <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Email Address
+            <div className="space-y-1.5">
+              <label htmlFor="login-role" className="block text-xs font-medium text-neutral-700">Sign in as</label>
+              <select id="login-role" name="role" required disabled={loading} value={role} onChange={(event) => { setRole(event.target.value); setError(null); }} className="w-full rounded-lg border border-neutral-300 bg-white px-3.5 py-2.5 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#66835b]">
+                <option value="" disabled>Choose your role</option>
+                <option value="USER">Patient</option>
+                <option value="DOCTOR">Doctor</option>
+                <option value="ADMIN">Administrator</option>
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="login-email" className="block text-xs font-medium text-neutral-700">
+                Email
               </label>
               <input
-                type="email"
+                id="login-email" name="email" autoComplete="username" type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@example.com"
-                className="block w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-[#E86591] text-xs text-slate-900 font-medium placeholder-slate-400 transition-colors"
+                className="w-full px-3.5 py-2.5 rounded-lg border border-neutral-300 bg-white text-sm text-neutral-900 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#66835b] focus:border-neutral-900 transition-all"
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Password
-              </label>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label htmlFor="login-password" className="block text-xs font-medium text-neutral-700">
+                  Password
+                </label>
+              </div>
               <input
-                type="password"
+                id="login-password" name="password" autoComplete="current-password" type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="block w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-[#E86591] text-xs text-slate-900 font-medium placeholder-slate-400 transition-colors"
+                className="w-full px-3.5 py-2.5 rounded-lg border border-neutral-300 bg-white text-sm text-neutral-900 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#66835b] focus:border-neutral-900 transition-all"
               />
             </div>
 
-            <div className="pt-2">
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full flex justify-center py-3 px-4 rounded-xl shadow-md text-xs font-bold text-white bg-gradient-to-r from-[#E86591] to-[#38BDF8] hover:from-[#DF5483] hover:to-[#0284C7] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-all shadow-pink-500/20"
-              >
-                {loading ? "Signing in..." : "Sign In"}
-              </button>
-            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-2.5 px-4 rounded-xl bg-[#294e42] hover:bg-[#1d3c32] disabled:bg-neutral-400 text-white text-xs font-semibold tracking-wide transition-all shadow-sm"
+            >
+              {loading ? "Signing in..." : "Sign in"}
+            </button>
           </form>
 
-          <div className="mt-6 border-t border-slate-100 pt-4 text-center">
-            <p className="text-xs text-slate-600">
-              Don't have an account yet?{" "}
+          {googleAvailable && <><button type="button" disabled={loading} onClick={async () => {
+            setLoading(true); setError(null);
+            try { await signIn("google", { redirectTo: "/dashboard" }); }
+            catch { setError("Google sign-in couldn't be started. Please try again."); setLoading(false); }
+          }} className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-2.5 text-sm text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-50">Continue with Google</button><p className="text-xs text-neutral-500">Google sign-in uses the role already assigned to your account.</p></>}
+
+          <div className="pt-3 border-t border-neutral-100 text-center">
+            <p className="text-xs text-neutral-500">
+              Don&apos;t have an account?{" "}
               <Link
                 href="/register"
-                className="font-bold text-[#E86591] hover:text-[#0284C7] transition-colors"
+                className="font-medium text-neutral-900 hover:underline underline-offset-4"
               >
-                Register a new account
+                Register
               </Link>
             </p>
           </div>
         </div>
+
+        {/* Bottom Back Link */}
+        <div className="text-center">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 text-xs text-neutral-400 hover:text-neutral-700 transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Back to home</span>
+          </Link>
+        </div>
+
       </div>
     </div>
   );
@@ -143,9 +183,9 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-b from-[#FFF5F8] via-[#F8FBFE] to-[#F1F6FB] flex flex-col justify-center items-center font-sans">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-[#E86591] border-t-transparent" />
-        <span className="text-xs text-slate-500 mt-2 font-medium">Loading sign-in...</span>
+      <div className="auth-page min-h-screen bg-[#f5f3ed] flex flex-col justify-center items-center font-sans">
+        <div className="animate-spin rounded-full h-7 w-7 border-2 border-neutral-800 border-t-transparent" />
+        <span className="text-xs text-neutral-500 mt-2 font-medium">Loading...</span>
       </div>
     }>
       <LoginForm />

@@ -1,0 +1,14 @@
+# Upload the installed models with the CLI, without research data or secrets.
+/*
+!main.py
+!xray_pipeline.py
+!requirements.txt
+!.python-version
+!vercel.json
+!verify_deployment.py
+!disease_model.pkl
+!label_encoder.pkl
+!chatbot_model.pkl
+!symptom_mapping.json
+!intents.json
+!xray_model.pth

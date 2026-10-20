@@ -1,29 +1,14 @@
 import { auth } from "@/auth";
+import { inference, InferenceError } from "@/lib/inference";
 import { NextResponse } from "next/server";
-
-const fastapiUrl = process.env.FASTAPI_URL || "http://localhost:8080";
-const secret = process.env.FASTAPI_SECRET || "";
-
-export async function POST(req: Request) {
+export const maxDuration = 300;
+export async function POST() {
+  const session = await auth();
+  if (session?.user?.role !== "ADMIN") return NextResponse.json({ error: "Administrator access is required." }, { status: 401 });
   try {
-    const session = await auth();
-    if (!session || !session.user || session.user.role !== "ADMIN") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const response = await fetch(`${fastapiUrl}/retrain`, {
-      method: "POST",
-      headers: {
-        "x-fastapi-secret": secret,
-      },
-    });
-
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.detail || "Failed to trigger retrain on FastAPI.");
-
+    const data = await inference<{ message: string }>("/retrain", {}, 240000);
     return NextResponse.json({ success: true, message: data.message });
-  } catch (error: any) {
-    console.error("Admin proxy retrain error:", error);
-    return NextResponse.json({ error: error.message || "Failed to retrain model." }, { status: 500 });
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Retraining failed." }, { status: error instanceof InferenceError ? error.status : 503 });
   }
 }
